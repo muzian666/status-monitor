@@ -1,0 +1,37 @@
+{
+  "title": "Monitors",
+  "addMonitor": "Add Monitor",
+  "editMonitor": "Edit Monitor",
+  "deleteConfirm": "Are you sure you want to delete this monitor?",
+  "form": {
+    "name_label": "Monitor Name",
+    "name_placeholder": "e.g., Google DNS",
+    "protocol_label": "Protocol",
+    "target_label": "Target Host",
+    "target_placeholder": "e.g., 8.8.8.8 or https://example.com",
+    "port_label": "Port",
+    "port_placeholder": "e.g., 443",
+    "interval_label": "Check Interval (seconds)",
+    "timeout_label": "Timeout (seconds)",
+    "expected_status_label": "Expected HTTP Status",
+    "dns_record_type_label": "DNS Record Type",
+    "is_active_label": "Enabled"
+  },
+  "detail": {
+    "title": "Monitor Detail",
+    "stats": "Statistics",
+    "history": "History",
+    "triggerCheck": "Run Check Now",
+    "latencyChart": "Latency Chart",
+    "lastCheck": "Last Check",
+    "avgLatency": "Avg Latency",
+    "uptimePercent": "Uptime %"
+  },
+  "protocols": {
+    "ping": "Ping",
+    "http": "HTTP",
+    "https": "HTTPS",
+    "tcp": "TCP Port",
+    "dns": "DNS"
+  }
+}

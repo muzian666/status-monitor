@@ -1,0 +1,20 @@
+{
+  "title": "Network Topology",
+  "autoMode": "Auto Trace",
+  "manualMode": "Manual Config",
+  "startTrace": "Start Traceroute",
+  "tracing": "Tracing...",
+  "targetHost": "Target Host",
+  "addNode": "Add Node",
+  "addLink": "Add Link",
+  "node": {
+    "source": "Source",
+    "router": "Router",
+    "server": "Server",
+    "cloud": "Cloud"
+  },
+  "hop": "Hop",
+  "thisMachine": "This Machine",
+  "runHistory": "Run History",
+  "noRuns": "No traceroute runs yet"
+}

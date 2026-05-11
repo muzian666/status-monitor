@@ -1,0 +1,18 @@
+.react-flow__animated-edge {
+  stroke-dasharray: 5;
+  animation: dash 0.5s linear infinite;
+}
+
+@keyframes dash {
+  to {
+    stroke-dashoffset: -10;
+  }
+}
+
+.hop-node {
+  transition: all 0.3s ease;
+}
+
+.hop-node:hover {
+  transform: scale(1.05);
+}

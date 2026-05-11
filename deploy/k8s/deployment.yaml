@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: status-monitor
+  namespace: status-monitor
+  labels:
+    app: status-monitor
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: status-monitor
+  template:
+    metadata:
+      labels:
+        app: status-monitor
+    spec:
+      securityContext:
+        capabilities:
+          add: ["NET_RAW"]
+      containers:
+        - name: status-monitor
+          image: status-monitor:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+              name: http
+          envFrom:
+            - configMapRef:
+                name: status-monitor-config
+          volumeMounts:
+            - name: data
+              mountPath: /app/data
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          livenessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: status-monitor-data

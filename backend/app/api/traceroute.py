@@ -1,0 +1,123 @@
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.database import get_db
+from app.models.traceroute import TracerouteHop, TracerouteRun
+from app.schemas.traceroute import (
+    TracerouteRunRequest,
+    TracerouteRunResponse,
+    TracerouteRunSummary,
+)
+
+router = APIRouter(prefix="/traceroute", tags=["traceroute"])
+
+
+@router.post("/run", response_model=TracerouteRunResponse, status_code=201)
+async def start_traceroute(body: TracerouteRunRequest, db: AsyncSession = Depends(get_db)):
+    run = TracerouteRun(target_host=body.target_host)
+    db.add(run)
+    await db.commit()
+    await db.refresh(run)
+
+    from app.checkers.traceroute import run_traceroute
+
+    await run_traceroute(run.id, body.target_host)
+
+    await db.refresh(run)
+    hops_result = await db.execute(
+        select(TracerouteHop).where(TracerouteHop.run_id == run.id).order_by(TracerouteHop.hop_number)
+    )
+    run.hops = hops_result.scalars().all()
+    return run
+
+
+@router.get("/runs", response_model=list[TracerouteRunSummary])
+async def list_runs(limit: int = 20, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(
+        select(TracerouteRun).order_by(TracerouteRun.started_at.desc()).limit(limit)
+    )
+    return result.scalars().all()
+
+
+@router.get("/runs/{run_id}", response_model=TracerouteRunResponse)
+async def get_run(run_id: int, db: AsyncSession = Depends(get_db)):
+    run = await db.get(TracerouteRun, run_id)
+    if not run:
+        raise HTTPException(404, "Run not found")
+    hops_result = await db.execute(
+        select(TracerouteHop).where(TracerouteHop.run_id == run_id).order_by(TracerouteHop.hop_number)
+    )
+    run.hops = hops_result.scalars().all()
+    return run
+
+
+@router.get("/runs/{run_id}/topology")
+async def get_run_topology(run_id: int, db: AsyncSession = Depends(get_db)):
+    run = await db.get(TracerouteRun, run_id)
+    if not run:
+        raise HTTPException(404, "Run not found")
+
+    hops_result = await db.execute(
+        select(TracerouteHop).where(TracerouteHop.run_id == run_id).order_by(TracerouteHop.hop_number)
+    )
+    hops = hops_result.scalars().all()
+
+    nodes = [
+        {
+            "id": "source",
+            "type": "source",
+            "position": {"x": 400, "y": 0},
+            "data": {"label": "This Machine", "ip": "localhost"},
+        }
+    ]
+    edges = []
+    prev_id = "source"
+
+    for i, hop in enumerate(hops):
+        node_id = f"hop-{hop.hop_number}"
+        y = (i + 1) * 120
+        nodes.append(
+            {
+                "id": node_id,
+                "type": "hop",
+                "position": {"x": 400, "y": y},
+                "data": {
+                    "label": hop.hostname or hop.ip_address or "*",
+                    "ip": hop.ip_address,
+                    "hop_number": hop.hop_number,
+                    "latency_ms": hop.latency_ms,
+                    "is_timeout": hop.is_timeout,
+                },
+            }
+        )
+        edges.append(
+            {
+                "id": f"edge-{prev_id}-{node_id}",
+                "source": prev_id,
+                "target": node_id,
+                "animated": not hop.is_timeout,
+                "data": {"latency_ms": hop.latency_ms},
+            }
+        )
+        prev_id = node_id
+
+    target_id = "target"
+    nodes.append(
+        {
+            "id": target_id,
+            "type": "target",
+            "position": {"x": 400, "y": (len(hops) + 1) * 120},
+            "data": {"label": run.target_host, "ip": run.target_host},
+        }
+    )
+    edges.append(
+        {
+            "id": f"edge-{prev_id}-{target_id}",
+            "source": prev_id,
+            "target": target_id,
+            "animated": True,
+        }
+    )
+
+    return {"nodes": nodes, "edges": edges}

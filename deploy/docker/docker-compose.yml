@@ -1,0 +1,28 @@
+version: "3.8"
+
+services:
+  status-monitor:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile
+    container_name: status-monitor
+    ports:
+      - "8000:8000"
+    volumes:
+      - monitor-data:/app/data
+    environment:
+      - SM_DEBUG=false
+      - SM_HOST=0.0.0.0
+      - SM_PORT=8000
+    cap_add:
+      - NET_RAW
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  monitor-data:
+    driver: local

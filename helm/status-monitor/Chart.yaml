@@ -1,0 +1,12 @@
+apiVersion: v2
+name: status-monitor
+description: Network Connectivity Monitoring Application
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - monitoring
+  - network
+  - ping
+  - traceroute
+  - topology

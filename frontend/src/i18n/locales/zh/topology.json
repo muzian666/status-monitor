@@ -1,0 +1,20 @@
+{
+  "title": "网络拓扑",
+  "autoMode": "自动追踪",
+  "manualMode": "手动配置",
+  "startTrace": "开始路由追踪",
+  "tracing": "追踪中...",
+  "targetHost": "目标主机",
+  "addNode": "添加节点",
+  "addLink": "添加连接",
+  "node": {
+    "source": "源",
+    "router": "路由器",
+    "server": "服务器",
+    "cloud": "云"
+  },
+  "hop": "跳",
+  "thisMachine": "本机",
+  "runHistory": "运行历史",
+  "noRuns": "暂无路由追踪记录"
+}

@@ -1,0 +1,9 @@
+{
+  "title": "Dashboard",
+  "totalMonitors": "Total Monitors",
+  "activeMonitors": "Active",
+  "healthyMonitors": "Healthy",
+  "unhealthyMonitors": "Unhealthy",
+  "recentActivity": "Recent Activity",
+  "quickStats": "Quick Stats"
+}

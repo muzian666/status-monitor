@@ -1,0 +1,9 @@
+Status Monitor has been deployed!
+
+Get the application URL:
+  export POD_NAME=$(kubectl get pods -n {{ .Release.Namespace }} -l "app={{ include "status-monitor.name" . }}" -o jsonpath="{.items[0].metadata.name}")
+  kubectl port-forward -n {{ .Release.Namespace }} $POD_NAME 8000:8000
+
+Then visit: http://localhost:8000
+
+For ingress access, configure your DNS to point status-monitor.local to the ingress IP.

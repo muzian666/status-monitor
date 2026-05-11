@@ -1,0 +1,37 @@
+{
+  "title": "监控项",
+  "addMonitor": "添加监控",
+  "editMonitor": "编辑监控",
+  "deleteConfirm": "确定要删除此监控项吗？",
+  "form": {
+    "name_label": "监控名称",
+    "name_placeholder": "例如：Google DNS",
+    "protocol_label": "协议",
+    "target_label": "目标主机",
+    "target_placeholder": "例如：8.8.8.8 或 https://example.com",
+    "port_label": "端口",
+    "port_placeholder": "例如：443",
+    "interval_label": "检查间隔（秒）",
+    "timeout_label": "超时时间（秒）",
+    "expected_status_label": "期望HTTP状态码",
+    "dns_record_type_label": "DNS记录类型",
+    "is_active_label": "启用"
+  },
+  "detail": {
+    "title": "监控详情",
+    "stats": "统计信息",
+    "history": "历史记录",
+    "triggerCheck": "立即检查",
+    "latencyChart": "延迟图表",
+    "lastCheck": "最近检查",
+    "avgLatency": "平均延迟",
+    "uptimePercent": "可用率"
+  },
+  "protocols": {
+    "ping": "Ping",
+    "http": "HTTP",
+    "https": "HTTPS",
+    "tcp": "TCP端口",
+    "dns": "DNS"
+  }
+}

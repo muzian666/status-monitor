@@ -1,0 +1,47 @@
+{
+  "app": {
+    "title": "Status Monitor",
+    "subtitle": "Network Connectivity Monitoring"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "monitors": "Monitors",
+    "topology": "Topology",
+    "settings": "Settings"
+  },
+  "common": {
+    "add": "Add",
+    "edit": "Edit",
+    "delete": "Delete",
+    "save": "Save",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "close": "Close",
+    "loading": "Loading...",
+    "search": "Search",
+    "refresh": "Refresh",
+    "status": "Status",
+    "actions": "Actions",
+    "name": "Name",
+    "type": "Type",
+    "target": "Target",
+    "protocol": "Protocol",
+    "interval": "Interval",
+    "timeout": "Timeout",
+    "active": "Active",
+    "inactive": "Inactive",
+    "online": "Online",
+    "offline": "Offline",
+    "latency": "Latency",
+    "uptime": "Uptime",
+    "success": "Success",
+    "failed": "Failed",
+    "noData": "No data",
+    "connected": "Connected",
+    "disconnected": "Disconnected"
+  },
+  "language": {
+    "en": "English",
+    "zh": "中文"
+  }
+}

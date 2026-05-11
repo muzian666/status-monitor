@@ -1,0 +1,47 @@
+{
+  "app": {
+    "title": "状态监控",
+    "subtitle": "网络连通性监控"
+  },
+  "nav": {
+    "dashboard": "仪表盘",
+    "monitors": "监控项",
+    "topology": "拓扑图",
+    "settings": "设置"
+  },
+  "common": {
+    "add": "添加",
+    "edit": "编辑",
+    "delete": "删除",
+    "save": "保存",
+    "cancel": "取消",
+    "confirm": "确认",
+    "close": "关闭",
+    "loading": "加载中...",
+    "search": "搜索",
+    "refresh": "刷新",
+    "status": "状态",
+    "actions": "操作",
+    "name": "名称",
+    "type": "类型",
+    "target": "目标",
+    "protocol": "协议",
+    "interval": "间隔",
+    "timeout": "超时",
+    "active": "启用",
+    "inactive": "停用",
+    "online": "在线",
+    "offline": "离线",
+    "latency": "延迟",
+    "uptime": "可用率",
+    "success": "成功",
+    "failed": "失败",
+    "noData": "暂无数据",
+    "connected": "已连接",
+    "disconnected": "已断开"
+  },
+  "language": {
+    "en": "English",
+    "zh": "中文"
+  }
+}
