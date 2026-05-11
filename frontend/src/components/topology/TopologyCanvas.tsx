@@ -23,7 +23,7 @@ import SourceNode from './nodes/SourceNode';
 import HopNode from './nodes/HopNode';
 import TargetNode from './nodes/TargetNode';
 import AnimatedEdge from './edges/AnimatedEdge';
-import { autoLayout } from '../../utils/layout';
+import { zigzagLayout } from '../../utils/layout';
 
 interface Props {
   mode: 'auto' | 'manual';
@@ -116,7 +116,7 @@ function TopologyCanvasInner({ mode }: Props) {
       prevId = nodeId;
     });
 
-    const laidOut = autoLayout(rawNodes, newEdges);
+    const laidOut = zigzagLayout(rawNodes, newEdges);
     setNodes(laidOut);
     setEdges(newEdges);
   }, [tracerouteHops, currentRunId, tracing, t, setNodes, setEdges]);

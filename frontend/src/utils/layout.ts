@@ -1,43 +1,40 @@
-import dagre from 'dagre';
 import type { Node, Edge } from '@xyflow/react';
 
 const NODE_WIDTH = 170;
-const NODE_HEIGHT = 100;
+const NODE_HEIGHT = 90;
+const GAP_X = 240; // horizontal gap between nodes
+const GAP_Y = 140; // vertical gap between rows
+const NODES_PER_ROW = 6;
 
-export function autoLayout(
-  nodes: Node[],
-  edges: Edge[],
-  direction: 'TB' | 'LR' = 'TB'
-): Node[] {
+/**
+ * Layout nodes in a zigzag (serpentine) pattern.
+ * Path goes left→right, then right→left, wrapping like a snake.
+ * Keeps all nodes at readable size within the viewport.
+ */
+export function zigzagLayout(nodes: Node[], _edges: Edge[]): Node[] {
   if (nodes.length === 0) return nodes;
 
-  const g = new dagre.graphlib.Graph();
-  g.setDefaultEdgeLabel(() => ({}));
-  g.setGraph({
-    rankdir: direction,
-    nodesep: 60,
-    ranksep: 50,
-    marginx: 40,
-    marginy: 40,
-  });
+  return nodes.map((node, i) => {
+    const row = Math.floor(i / NODES_PER_ROW);
+    const col = i % NODES_PER_ROW;
+    const isReversed = row % 2 === 1;
+    const actualCol = isReversed ? (NODES_PER_ROW - 1 - col) : col;
 
-  for (const node of nodes) {
-    g.setNode(node.id, { width: NODE_WIDTH, height: NODE_HEIGHT });
-  }
-  for (const edge of edges) {
-    g.setEdge(edge.source, edge.target);
-  }
-
-  dagre.layout(g);
-
-  return nodes.map((node) => {
-    const pos = g.node(node.id);
     return {
       ...node,
       position: {
-        x: pos.x - NODE_WIDTH / 2,
-        y: pos.y - NODE_HEIGHT / 2,
+        x: actualCol * GAP_X,
+        y: row * GAP_Y,
       },
     };
   });
+}
+
+/**
+ * General dagre-like layout for non-linear graphs (manual mode).
+ * For linear paths, use zigzagLayout instead.
+ */
+export function zigzagLayoutForPath(nodeIds: string[], edges: Edge[]): Node[] {
+  // unused, kept for compatibility
+  return [];
 }
