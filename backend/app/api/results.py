@@ -12,6 +12,25 @@ from app.schemas.check_result import CheckResultResponse, MonitorStats
 router = APIRouter(prefix="/results", tags=["results"])
 
 
+@router.get("/latest-all")
+async def get_all_latest(db: AsyncSession = Depends(get_db)):
+    sub = (
+        select(
+            CheckResult.monitor_id,
+            func.max(CheckResult.id).label("max_id"),
+        )
+        .group_by(CheckResult.monitor_id)
+        .subquery()
+    )
+    stmt = select(CheckResult).join(sub, CheckResult.id == sub.c.max_id)
+    result = await db.execute(stmt)
+    rows = result.scalars().all()
+    return {
+        r.monitor_id: CheckResultResponse.model_validate(r).model_dump()
+        for r in rows
+    }
+
+
 @router.get("/monitor/{monitor_id}", response_model=list[CheckResultResponse])
 async def get_results(
     monitor_id: int,

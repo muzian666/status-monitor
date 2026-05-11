@@ -10,4 +10,7 @@ export const resultsApi = {
 
   stats: (monitorId: number, hours = 24) =>
     api.get<MonitorStats>(`/results/monitor/${monitorId}/stats`, { params: { hours } }).then((r) => r.data),
+
+  latestAll: () =>
+    api.get<Record<number, CheckResult>>('/results/latest-all').then((r) => r.data),
 };

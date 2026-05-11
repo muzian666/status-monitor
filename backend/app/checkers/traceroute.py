@@ -1,6 +1,8 @@
 import asyncio
+import ipaddress
 import platform
 import re
+import socket
 from datetime import datetime
 
 from sqlalchemy import select
@@ -8,6 +10,33 @@ from sqlalchemy import select
 from app.database import async_session
 from app.models.traceroute import TracerouteHop, TracerouteRun, TracerouteStatus
 from app.services.ws_manager import ws_manager
+
+
+def _is_private_ip(ip: str) -> bool:
+    try:
+        return ipaddress.ip_address(ip).is_private
+    except ValueError:
+        return False
+
+
+def _classify_hop(ip: str | None, hop_number: int, is_last: bool) -> str:
+    if not ip:
+        return "unknown"
+    if hop_number == 1:
+        return "gateway"
+    if _is_private_ip(ip):
+        return "lan"
+    if is_last:
+        return "target"
+    return "transit"
+
+
+def _resolve_hostname(ip: str) -> str | None:
+    try:
+        result = socket.gethostbyaddr(ip)
+        return result[0]
+    except (socket.herror, socket.gaierror, socket.timeout, OSError):
+        return None
 
 
 async def run_traceroute(run_id: int, target_host: str):
@@ -39,6 +68,8 @@ async def run_traceroute(run_id: int, target_host: str):
             )
 
             hop_number = 0
+            hops_cache: list[dict] = []
+
             while True:
                 line = await proc.stdout.readline()
                 if not line:
@@ -73,15 +104,40 @@ async def run_traceroute(run_id: int, target_host: str):
                         if ip_match:
                             ip_address = ip_match.group(1)
 
+                    actual_timeout = is_timeout or ip_address is None
+
+                    # Resolve hostname with timeout
+                    hostname = None
+                    if ip_address:
+                        try:
+                            loop = asyncio.get_event_loop()
+                            hostname = await asyncio.wait_for(
+                                loop.run_in_executor(None, _resolve_hostname, ip_address),
+                                timeout=2.0,
+                            )
+                        except asyncio.TimeoutError:
+                            hostname = None
+
+                    hop_type = _classify_hop(ip_address, hop_number, False)
+
                     hop = TracerouteHop(
                         run_id=run_id,
                         hop_number=hop_number,
                         ip_address=ip_address,
+                        hostname=hostname,
                         latency_ms=latency_ms,
-                        is_timeout=is_timeout or ip_address is None,
+                        is_timeout=actual_timeout,
+                        hop_type=hop_type,
                     )
                     db.add(hop)
                     await db.commit()
+
+                    hops_cache.append({
+                        "id": hop.id,
+                        "hop_number": hop_number,
+                        "ip_address": ip_address,
+                        "is_timeout": actual_timeout,
+                    })
 
                     await ws_manager.broadcast(
                         {
@@ -90,13 +146,26 @@ async def run_traceroute(run_id: int, target_host: str):
                                 "run_id": run_id,
                                 "hop_number": hop_number,
                                 "ip_address": ip_address,
+                                "hostname": hostname,
                                 "latency_ms": latency_ms,
-                                "is_timeout": is_timeout,
+                                "is_timeout": actual_timeout,
+                                "hop_type": hop_type,
                             },
                         }
                     )
 
             await proc.wait()
+
+            # Re-classify last hop as target using ORM
+            total = len(hops_cache)
+            for entry in hops_cache:
+                is_last = (entry["hop_number"] == total and not entry["is_timeout"])
+                new_type = _classify_hop(entry["ip_address"], entry["hop_number"], is_last)
+                if new_type != "unknown":
+                    hop_obj = await db.get(TracerouteHop, entry["id"])
+                    if hop_obj:
+                        hop_obj.hop_type = new_type
+            await db.commit()
 
             run = await db.get(TracerouteRun, run_id)
             if run:
@@ -113,6 +182,9 @@ async def run_traceroute(run_id: int, target_host: str):
             )
 
         except Exception as e:
+            import traceback
+            traceback.print_exc()
+            print(f"TRACEROUTE ERROR for run {run_id}: {e}")
             run = await db.get(TracerouteRun, run_id)
             if run:
                 run.status = TracerouteStatus.FAILED

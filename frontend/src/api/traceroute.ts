@@ -1,9 +1,15 @@
 import api from './client';
 import type { TracerouteRun } from '../types/topology';
 
+export interface TracerouteStartResult {
+  run_id: number;
+  target_host: string;
+  status: string;
+}
+
 export const tracerouteApi = {
   run: (targetHost: string) =>
-    api.post<TracerouteRun>('/traceroute/run', { target_host: targetHost }).then((r) => r.data),
+    api.post<TracerouteStartResult>('/traceroute/run', { target_host: targetHost }).then((r) => r.data),
 
   listRuns: (limit = 20) =>
     api.get<TracerouteRun[]>('/traceroute/runs', { params: { limit } }).then((r) => r.data),

@@ -11,6 +11,7 @@ interface MonitorState {
   language: 'en' | 'zh';
 
   setMonitors: (monitors: Monitor[]) => void;
+  setLatestResults: (results: Record<number, CheckResult>) => void;
   addResult: (data: Record<string, unknown>) => void;
   addTracerouteHop: (data: Record<string, unknown>) => void;
   completeTraceroute: (data: Record<string, unknown>) => void;
@@ -29,10 +30,21 @@ export const useStore = create<MonitorState>((set) => ({
 
   setMonitors: (monitors) => set({ monitors }),
 
+  setLatestResults: (results) => set({ latestResults: results }),
+
   addResult: (data) =>
     set((state) => {
       const monitorId = data.monitor_id as number;
-      const result = data as unknown as CheckResult;
+      const result = {
+        id: data.id as number,
+        monitor_id: monitorId,
+        is_success: data.is_success as boolean,
+        latency_ms: data.latency_ms as number | null,
+        status_code: data.status_code as number | null,
+        error_message: data.error_message as string | null,
+        dns_result: data.dns_result as string | null,
+        checked_at: data.checked_at as string,
+      };
       return {
         latestResults: { ...state.latestResults, [monitorId]: result },
         results: {

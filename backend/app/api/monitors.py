@@ -9,7 +9,7 @@ from app.schemas.monitor import MonitorCreate, MonitorResponse, MonitorUpdate
 router = APIRouter(prefix="/monitors", tags=["monitors"])
 
 
-@router.get("/", response_model=list[MonitorResponse])
+@router.get("", response_model=list[MonitorResponse])
 async def list_monitors(
     protocol: str | None = None,
     is_active: bool | None = None,
@@ -24,7 +24,7 @@ async def list_monitors(
     return result.scalars().all()
 
 
-@router.post("/", response_model=MonitorResponse, status_code=201)
+@router.post("", response_model=MonitorResponse, status_code=201)
 async def create_monitor(body: MonitorCreate, db: AsyncSession = Depends(get_db)):
     monitor = Monitor(**body.model_dump())
     db.add(monitor)

@@ -4,7 +4,7 @@ from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.api import health, monitors, results, topology, traceroute, websocket
@@ -41,12 +41,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Register WebSocket FIRST so it has priority over catch-all routes
+app.include_router(websocket.router, prefix="/api/v1")
+
 app.include_router(health.router, prefix="/api/v1")
 app.include_router(monitors.router, prefix="/api/v1")
 app.include_router(results.router, prefix="/api/v1")
 app.include_router(topology.router, prefix="/api/v1")
 app.include_router(traceroute.router, prefix="/api/v1")
-app.include_router(websocket.router, prefix="/api/v1")
 
 static_dir = Path(__file__).parent.parent / "static"
 if static_dir.is_dir():
@@ -54,6 +56,8 @@ if static_dir.is_dir():
 
     @app.get("/{full_path:path}")
     async def serve_spa(request: Request, full_path: str):
+        if full_path.startswith("api/"):
+            return JSONResponse({"detail": "Not Found"}, status_code=404)
         file_path = static_dir / full_path
         if full_path and file_path.is_file():
             return FileResponse(file_path)

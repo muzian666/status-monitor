@@ -13,6 +13,13 @@
     "server": "服务器",
     "cloud": "云"
   },
+  "node_type": {
+    "gateway": "默认网关",
+    "lan": "局域网",
+    "transit": "运营商/中转",
+    "target": "目标",
+    "unknown": "未知"
+  },
   "hop": "跳",
   "thisMachine": "本机",
   "runHistory": "运行历史",

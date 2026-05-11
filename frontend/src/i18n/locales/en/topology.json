@@ -13,6 +13,13 @@
     "server": "Server",
     "cloud": "Cloud"
   },
+  "node_type": {
+    "gateway": "Gateway",
+    "lan": "LAN",
+    "transit": "Transit/ISP",
+    "target": "Target",
+    "unknown": "Unknown"
+  },
   "hop": "Hop",
   "thisMachine": "This Machine",
   "runHistory": "Run History",

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { monitorsApi } from '../../api/monitors';
+import { resultsApi } from '../../api/results';
 import { useStore } from '../../store';
 import MonitorForm from './MonitorForm';
 import type { Monitor } from '../../types/monitor';
@@ -10,15 +11,25 @@ export default function MonitorListPage() {
   const { t } = useTranslation('monitor');
   const { t: tc } = useTranslation('common');
   const setMonitors = useStore((s) => s.setMonitors);
-  const monitors = useStore((s) => s.monitors);
-  const latestResults = useStore((s) => s.latestResults);
+  const setLatestResults = useStore((s) => s.setLatestResults);
+  const rawMonitors = useStore((s) => s.monitors);
+  const monitors = Array.isArray(rawMonitors) ? rawMonitors : [];
+  const latestResults = useStore((s) => s.latestResults) || {};
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Monitor | null>(null);
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
-    const data = await monitorsApi.list();
-    setMonitors(data);
+    try {
+      const [data, latest] = await Promise.all([
+        monitorsApi.list().catch(() => []),
+        resultsApi.latestAll().catch(() => ({})),
+      ]);
+      setMonitors(Array.isArray(data) ? data : []);
+      setLatestResults(latest);
+    } catch (err) {
+      console.error('Failed to load monitors:', err);
+    }
     setLoading(false);
   };
 

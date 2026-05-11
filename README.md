@@ -1,17 +1,20 @@
 # Status Monitor
 
-Network connectivity monitoring application with real-time WebUI, supporting multiple protocols and network topology visualization.
+Network connectivity monitoring with real-time visualization, traceroute path analysis, and animated topology.
 
-## Features
+## Highlights
 
-- **Multi-protocol monitoring**: ICMP Ping, HTTP/HTTPS, TCP Port, DNS
-- **Real-time dashboard**: Live status updates via WebSocket
-- **Network topology visualization**: Auto traceroute discovery + manual node-link configuration
-- **Animated topology**: SVG-animated edges showing packet flow and latency
-- **Bilingual UI**: Chinese/English with one-click switching
-- **REST API**: Full CRUD for monitors, results, and topology
-- **Docker/Podman**: Multi-stage build, production-ready
-- **Kubernetes**: manifests + Helm chart with HPA, Ingress, PVC
+- **Route Trace (Traceroute)** - Visualize the full network path hop-by-hop with real-time animated packet flow. Each hop shows IP, hostname, latency bar, and auto-detected node type (Gateway / LAN / Transit / ISP / Target). Failed hops are highlighted in red, and unreachable targets clearly show where the path broke.
+
+- **Multi-Protocol Monitoring** - ICMP Ping, HTTP(S), TCP Port, and DNS checks with configurable intervals and timeouts. Latency color-coded (green <10ms, yellow <50ms, orange <100ms, red 100ms+).
+
+- **Live Topology Editor** - Two modes: auto-discover via traceroute, or manually build a network diagram with drag-and-drop nodes and links. Each link animates to show live traffic flow.
+
+- **Real-Time Dashboard** - WebSocket-powered updates with no page refresh. Status changes and latency results stream instantly.
+
+- **Bilingual UI** - Full Chinese/English support with one-click language switching.
+
+- **Cloud-Ready Deployment** - Docker/Podman multi-stage build, Kubernetes manifests with HPA and Ingress, plus a Helm chart.
 
 ## Quick Start
 
@@ -66,11 +69,13 @@ All endpoints under `/api/v1/`:
 | POST | /monitors/{id}/check | Trigger immediate check |
 | GET | /results/monitor/{id} | Paginated check results |
 | GET | /results/monitor/{id}/stats | Aggregated statistics |
+| GET | /results/latest-all | Latest result for all monitors |
 | GET/POST | /topology/nodes | List/Create topology nodes |
 | GET/POST | /topology/links | List/Create topology links |
 | GET | /topology/graph | Full graph for visualization |
-| POST | /traceroute/run | Start traceroute |
-| GET | /traceroute/runs/{id}/topology | Traceroute as topology graph |
+| POST | /traceroute/run | Start async traceroute |
+| GET | /traceroute/runs/{id} | Get run with all hops |
+| GET | /traceroute/runs/{id}/topology | Hops as React Flow graph |
 | WS | /ws | Real-time updates |
 
 Swagger UI available at http://localhost:8000/docs
@@ -83,12 +88,14 @@ Frontend (React + TypeScript + Vite)
   -> Recharts for live charts
   -> Zustand for state
   -> i18next for bilingual
+  -> Framer Motion for animations
 
 Backend (Python + FastAPI)
   -> SQLAlchemy async + SQLite
   -> APScheduler for monitoring jobs
   -> WebSocket for real-time broadcast
   -> asyncio subprocess for traceroute/ping
+  -> Reverse DNS resolution for hop hostnames
 ```
 
 ## Environment Variables

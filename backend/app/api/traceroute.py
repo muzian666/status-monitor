@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException
+import asyncio
+
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -13,8 +15,11 @@ from app.schemas.traceroute import (
 router = APIRouter(prefix="/traceroute", tags=["traceroute"])
 
 
-@router.post("/run", response_model=TracerouteRunResponse, status_code=201)
-async def start_traceroute(body: TracerouteRunRequest, db: AsyncSession = Depends(get_db)):
+@router.post("/run", status_code=201)
+async def start_traceroute(
+    body: TracerouteRunRequest,
+    db: AsyncSession = Depends(get_db),
+):
     run = TracerouteRun(target_host=body.target_host)
     db.add(run)
     await db.commit()
@@ -22,14 +27,9 @@ async def start_traceroute(body: TracerouteRunRequest, db: AsyncSession = Depend
 
     from app.checkers.traceroute import run_traceroute
 
-    await run_traceroute(run.id, body.target_host)
+    asyncio.create_task(run_traceroute(run.id, body.target_host))
 
-    await db.refresh(run)
-    hops_result = await db.execute(
-        select(TracerouteHop).where(TracerouteHop.run_id == run.id).order_by(TracerouteHop.hop_number)
-    )
-    run.hops = hops_result.scalars().all()
-    return run
+    return {"run_id": run.id, "target_host": body.target_host, "status": "running"}
 
 
 @router.get("/runs", response_model=list[TracerouteRunSummary])
@@ -76,7 +76,7 @@ async def get_run_topology(run_id: int, db: AsyncSession = Depends(get_db)):
 
     for i, hop in enumerate(hops):
         node_id = f"hop-{hop.hop_number}"
-        y = (i + 1) * 120
+        y = (i + 1) * 130
         nodes.append(
             {
                 "id": node_id,
@@ -85,9 +85,11 @@ async def get_run_topology(run_id: int, db: AsyncSession = Depends(get_db)):
                 "data": {
                     "label": hop.hostname or hop.ip_address or "*",
                     "ip": hop.ip_address,
+                    "hostname": hop.hostname,
                     "hop_number": hop.hop_number,
                     "latency_ms": hop.latency_ms,
                     "is_timeout": hop.is_timeout,
+                    "hop_type": hop.hop_type,
                 },
             }
         )
@@ -96,28 +98,40 @@ async def get_run_topology(run_id: int, db: AsyncSession = Depends(get_db)):
                 "id": f"edge-{prev_id}-{node_id}",
                 "source": prev_id,
                 "target": node_id,
+                "type": "animated",
                 "animated": not hop.is_timeout,
-                "data": {"latency_ms": hop.latency_ms},
+                "data": {"latency_ms": hop.latency_ms, "is_timeout": hop.is_timeout},
             }
         )
         prev_id = node_id
 
-    target_id = "target"
+    # Always show target node (even if unreachable)
+    target_y = (len(hops) + 1) * 130
+    is_failed = run.status in ("failed",) or (
+        hops and hops[-1].is_timeout
+    )
     nodes.append(
         {
-            "id": target_id,
+            "id": "target",
             "type": "target",
-            "position": {"x": 400, "y": (len(hops) + 1) * 120},
-            "data": {"label": run.target_host, "ip": run.target_host},
+            "position": {"x": 400, "y": target_y},
+            "data": {
+                "label": run.target_host,
+                "ip": run.target_host,
+                "is_failed": is_failed,
+                "reached": run.status == "completed" and not is_failed,
+            },
         }
     )
     edges.append(
         {
-            "id": f"edge-{prev_id}-{target_id}",
+            "id": f"edge-{prev_id}-target",
             "source": prev_id,
-            "target": target_id,
-            "animated": True,
+            "target": "target",
+            "type": "animated",
+            "animated": not is_failed,
+            "data": {"is_timeout": is_failed},
         }
     )
 
-    return {"nodes": nodes, "edges": edges}
+    return {"nodes": nodes, "edges": edges, "status": run.status}

@@ -6,8 +6,6 @@ import {
   MiniMap,
   useNodesState,
   useEdgesState,
-  addEdge,
-  type Connection,
   type Node,
   type Edge,
 } from '@xyflow/react';
@@ -21,6 +19,7 @@ import ManualEditor from './ManualEditor';
 import MonitorNode from './nodes/MonitorNode';
 import SourceNode from './nodes/SourceNode';
 import HopNode from './nodes/HopNode';
+import TargetNode from './nodes/TargetNode';
 import AnimatedEdge from './edges/AnimatedEdge';
 
 interface Props {
@@ -30,7 +29,7 @@ interface Props {
 const nodeTypes = {
   source: SourceNode,
   monitor: MonitorNode,
-  target: MonitorNode,
+  target: TargetNode,
   hop: HopNode,
   custom: MonitorNode,
 };
@@ -45,20 +44,66 @@ export default function TopologyCanvas({ mode }: Props) {
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const [targetHost, setTargetHost] = useState('');
   const [tracing, setTracing] = useState(false);
-  const addTracerouteHop = useStore((s) => s.addTracerouteHop);
-  const setCurrentTraceRunId = useStore((s) => s.setCurrentTraceRunId);
+  const [currentRunId, setCurrentRunId] = useState<number | null>(null);
   const tracerouteHops = useStore((s) => s.tracerouteHops);
 
   const onConnect = useCallback(
-    (params: Connection) => setEdges((eds) => addEdge(params, eds)),
+    (params: any) => setEdges((eds) => eds.concat(params as Edge)),
     [setEdges]
   );
 
   useEffect(() => {
-    if (mode === 'manual') {
-      loadManualGraph();
-    }
+    if (mode === 'manual') loadManualGraph();
   }, [mode]);
+
+  // Build topology from WebSocket hops in real-time
+  useEffect(() => {
+    if (!currentRunId || !tracing) return;
+    const hops = tracerouteHops[currentRunId] || [];
+    if (hops.length === 0) return;
+
+    const newNodes: Node[] = [
+      {
+        id: 'source',
+        type: 'source',
+        position: { x: 400, y: 0 },
+        data: { label: t('thisMachine') },
+      },
+    ];
+
+    const newEdges: Edge[] = [];
+    let prevId = 'source';
+
+    hops.forEach((hop, i) => {
+      const nodeId = `hop-${hop.hop_number}`;
+      newNodes.push({
+        id: nodeId,
+        type: 'hop',
+        position: { x: 400, y: (i + 1) * 130 },
+        data: {
+          label: (hop as any).hostname || hop.ip_address || '*',
+          ip: hop.ip_address,
+          hostname: (hop as any).hostname,
+          hop_number: hop.hop_number,
+          latency_ms: hop.latency_ms,
+          is_timeout: hop.is_timeout,
+          hop_type: (hop as any).hop_type,
+        },
+      });
+      newEdges.push({
+        id: `edge-${prevId}-${nodeId}`,
+        source: prevId,
+        target: nodeId,
+        type: 'animated',
+        animated: !hop.is_timeout,
+        data: { latency_ms: hop.latency_ms, is_timeout: hop.is_timeout },
+      });
+      prevId = nodeId;
+    });
+
+    setNodes(newNodes);
+    setEdges(newEdges);
+  }, [tracerouteHops, currentRunId, tracing, t, setNodes, setEdges]);
 
   const loadManualGraph = async () => {
     try {
@@ -95,36 +140,44 @@ export default function TopologyCanvas({ mode }: Props) {
     setTracing(true);
     setNodes([]);
     setEdges([]);
+    setCurrentRunId(null);
 
-    const sourceNode: Node = {
-      id: 'source',
-      type: 'source',
-      position: { x: 400, y: 0 },
-      data: { label: t('thisMachine') },
-    };
-    setNodes([sourceNode]);
+    // Show source node immediately
+    setNodes([
+      {
+        id: 'source',
+        type: 'source',
+        position: { x: 400, y: 0 },
+        data: { label: t('thisMachine') },
+      },
+    ]);
 
     try {
-      const run = await tracerouteApi.run(targetHost);
-      setCurrentTraceRunId(run.id);
+      const result = await tracerouteApi.run(targetHost);
+      const runId = result.run_id;
+      setCurrentRunId(runId);
 
-      const flowData = await tracerouteApi.getTopology(run.id);
-      const flowNodes = flowData.nodes.map((n: any) => ({
-        ...n,
-        type: n.type === 'source' ? 'source' : n.type === 'target' ? 'monitor' : 'hop',
-      }));
-      const flowEdges = flowData.edges.map((e: any) => ({
-        ...e,
-        type: 'animated',
-      }));
+      // Poll for completion to add target node
+      const pollInterval = setInterval(async () => {
+        try {
+          const run = await tracerouteApi.getRun(runId);
+          if (run.status !== 'running') {
+            clearInterval(pollInterval);
+            setTracing(false);
 
-      setNodes(flowNodes);
-      setEdges(flowEdges);
+            // Get final topology with target node
+            const topo = await tracerouteApi.getTopology(runId);
+            setNodes(topo.nodes as Node[]);
+            setEdges(topo.edges as Edge[]);
+          }
+        } catch {
+          clearInterval(pollInterval);
+          setTracing(false);
+        }
+      }, 2000);
     } catch (err) {
       console.error('Traceroute failed:', err);
-    } finally {
       setTracing(false);
-      setCurrentTraceRunId(null);
     }
   };
 
@@ -147,8 +200,9 @@ export default function TopologyCanvas({ mode }: Props) {
           <MiniMap
             nodeColor={(n) => {
               if (n.type === 'source') return '#3b82f6';
+              if (n.type === 'target') return '#22c55e';
               if (n.type === 'hop') return '#f59e0b';
-              return '#22c55e';
+              return '#94a3b8';
             }}
             style={{ borderRadius: '8px' }}
           />

@@ -38,3 +38,4 @@ class TracerouteHop(Base):
     hostname: Mapped[str | None] = mapped_column(String(200), nullable=True)
     latency_ms: Mapped[float | None] = mapped_column(Float, nullable=True)
     is_timeout: Mapped[bool] = mapped_column(Boolean, default=False)
+    hop_type: Mapped[str | None] = mapped_column(String(50), nullable=True)
