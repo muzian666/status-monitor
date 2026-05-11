@@ -1,10 +1,8 @@
 import type { Node, Edge } from '@xyflow/react';
 
-const NODE_WIDTH = 170;
-const NODE_HEIGHT = 90;
-const GAP_X = 240; // horizontal gap between nodes
-const GAP_Y = 140; // vertical gap between rows
-const NODES_PER_ROW = 6;
+const GAP_X = 280; // horizontal gap between nodes
+const GAP_Y = 220; // vertical gap between rows
+const NODES_PER_ROW = 5;
 
 /**
  * Layout nodes in a zigzag (serpentine) pattern.
