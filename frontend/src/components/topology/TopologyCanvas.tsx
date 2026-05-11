@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ReactFlow,
   Background,
@@ -8,6 +8,8 @@ import {
   useEdgesState,
   type Node,
   type Edge,
+  useReactFlow,
+  ReactFlowProvider,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { useTranslation } from 'react-i18next';
@@ -21,6 +23,7 @@ import SourceNode from './nodes/SourceNode';
 import HopNode from './nodes/HopNode';
 import TargetNode from './nodes/TargetNode';
 import AnimatedEdge from './edges/AnimatedEdge';
+import { autoLayout } from '../../utils/layout';
 
 interface Props {
   mode: 'auto' | 'manual';
@@ -38,7 +41,7 @@ const edgeTypes = {
   animated: AnimatedEdge,
 };
 
-export default function TopologyCanvas({ mode }: Props) {
+function TopologyCanvasInner({ mode }: Props) {
   const { t } = useTranslation('topology');
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
@@ -46,6 +49,18 @@ export default function TopologyCanvas({ mode }: Props) {
   const [tracing, setTracing] = useState(false);
   const [currentRunId, setCurrentRunId] = useState<number | null>(null);
   const tracerouteHops = useStore((s) => s.tracerouteHops);
+  const { fitView } = useReactFlow();
+  const fitViewTimer = useRef<ReturnType<typeof setTimeout>>();
+
+  // Auto-fit view after nodes change, debounced
+  useEffect(() => {
+    if (nodes.length === 0) return;
+    clearTimeout(fitViewTimer.current);
+    fitViewTimer.current = setTimeout(() => {
+      fitView({ padding: 0.15, duration: 300 });
+    }, 100);
+    return () => clearTimeout(fitViewTimer.current);
+  }, [nodes, fitView]);
 
   const onConnect = useCallback(
     (params: any) => setEdges((eds) => eds.concat(params as Edge)),
@@ -56,17 +71,17 @@ export default function TopologyCanvas({ mode }: Props) {
     if (mode === 'manual') loadManualGraph();
   }, [mode]);
 
-  // Build topology from WebSocket hops in real-time
+  // Build topology from WebSocket hops in real-time with auto-layout
   useEffect(() => {
     if (!currentRunId || !tracing) return;
     const hops = tracerouteHops[currentRunId] || [];
     if (hops.length === 0) return;
 
-    const newNodes: Node[] = [
+    const rawNodes: Node[] = [
       {
         id: 'source',
         type: 'source',
-        position: { x: 400, y: 0 },
+        position: { x: 0, y: 0 },
         data: { label: t('thisMachine') },
       },
     ];
@@ -74,12 +89,12 @@ export default function TopologyCanvas({ mode }: Props) {
     const newEdges: Edge[] = [];
     let prevId = 'source';
 
-    hops.forEach((hop, i) => {
+    hops.forEach((hop) => {
       const nodeId = `hop-${hop.hop_number}`;
-      newNodes.push({
+      rawNodes.push({
         id: nodeId,
         type: 'hop',
-        position: { x: 400, y: (i + 1) * 130 },
+        position: { x: 0, y: 0 },
         data: {
           label: (hop as any).hostname || hop.ip_address || '*',
           ip: hop.ip_address,
@@ -101,7 +116,8 @@ export default function TopologyCanvas({ mode }: Props) {
       prevId = nodeId;
     });
 
-    setNodes(newNodes);
+    const laidOut = autoLayout(rawNodes, newEdges);
+    setNodes(laidOut);
     setEdges(newEdges);
   }, [tracerouteHops, currentRunId, tracing, t, setNodes, setEdges]);
 
@@ -142,12 +158,11 @@ export default function TopologyCanvas({ mode }: Props) {
     setEdges([]);
     setCurrentRunId(null);
 
-    // Show source node immediately
     setNodes([
       {
         id: 'source',
         type: 'source',
-        position: { x: 400, y: 0 },
+        position: { x: 0, y: 0 },
         data: { label: t('thisMachine') },
       },
     ]);
@@ -157,7 +172,6 @@ export default function TopologyCanvas({ mode }: Props) {
       const runId = result.run_id;
       setCurrentRunId(runId);
 
-      // Poll for completion to add target node
       const pollInterval = setInterval(async () => {
         try {
           const run = await tracerouteApi.getRun(runId);
@@ -165,9 +179,12 @@ export default function TopologyCanvas({ mode }: Props) {
             clearInterval(pollInterval);
             setTracing(false);
 
-            // Get final topology with target node
             const topo = await tracerouteApi.getTopology(runId);
-            setNodes(topo.nodes as Node[]);
+            const laidOut = autoLayout(
+              (topo.nodes as Node[]).map((n: any) => ({ ...n, position: { x: 0, y: 0 } })),
+              topo.edges as Edge[]
+            );
+            setNodes(laidOut);
             setEdges(topo.edges as Edge[]);
           }
         } catch {
@@ -193,6 +210,8 @@ export default function TopologyCanvas({ mode }: Props) {
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
           fitView
+          minZoom={0.1}
+          maxZoom={2}
           attributionPosition="bottom-left"
         >
           <Background color="#e5e7eb" gap={20} />
@@ -226,5 +245,13 @@ export default function TopologyCanvas({ mode }: Props) {
         )}
       </div>
     </div>
+  );
+}
+
+export default function TopologyCanvas({ mode }: Props) {
+  return (
+    <ReactFlowProvider>
+      <TopologyCanvasInner mode={mode} />
+    </ReactFlowProvider>
   );
 }
