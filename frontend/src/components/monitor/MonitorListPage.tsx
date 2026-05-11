@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { monitorsApi } from '../../api/monitors';
 import { resultsApi } from '../../api/results';
@@ -11,6 +12,7 @@ import type { Monitor } from '../../types/monitor';
 export default function MonitorListPage() {
   const { t } = useTranslation('monitor');
   const { t: tc } = useTranslation('common');
+  const navigate = useNavigate();
   const setMonitors = useStore((s) => s.setMonitors);
   const setLatestResults = useStore((s) => s.setLatestResults);
   const rawMonitors = useStore((s) => s.monitors);
@@ -99,7 +101,8 @@ export default function MonitorListPage() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: i * 0.03 }}
-                  className="hover:bg-gray-50 dark:hover:bg-gray-700/30"
+                  onClick={() => navigate(`/monitors/${m.id}`)}
+                  className="hover:bg-gray-50 dark:hover:bg-gray-700/30 cursor-pointer"
                 >
                   <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">{m.name}</td>
                   <td className="px-4 py-3">
@@ -120,10 +123,10 @@ export default function MonitorListPage() {
                     {result?.latency_ms != null ? `${result.latency_ms.toFixed(1)}ms` : '-'}
                   </td>
                   <td className="px-4 py-3 text-right space-x-2">
-                    <button onClick={() => handleEdit(m)} className="text-xs px-3 py-1 rounded bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 transition-colors">
+                    <button onClick={(e) => { e.stopPropagation(); handleEdit(m); }} className="text-xs px-3 py-1 rounded bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 transition-colors">
                       {tc('edit')}
                     </button>
-                    <button onClick={() => setDeleting(m)} className="text-xs px-3 py-1 rounded bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 text-red-600 dark:text-red-400 transition-colors">
+                    <button onClick={(e) => { e.stopPropagation(); setDeleting(m); }} className="text-xs px-3 py-1 rounded bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 text-red-600 dark:text-red-400 transition-colors">
                       {tc('delete')}
                     </button>
                   </td>

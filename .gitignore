@@ -40,3 +40,6 @@ backend/static/
 
 # Claude
 .claude/
+
+# Deploy secrets
+deploy/k8s/deploy.env

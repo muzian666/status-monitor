@@ -15,13 +15,13 @@ spec:
       labels:
         app: status-monitor
     spec:
-      securityContext:
-        capabilities:
-          add: ["NET_RAW"]
       containers:
         - name: status-monitor
-          image: status-monitor:latest
-          imagePullPolicy: IfNotPresent
+          image: ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}
+          imagePullPolicy: Always
+          securityContext:
+            capabilities:
+              add: ["NET_RAW"]
           ports:
             - containerPort: 8000
               name: http

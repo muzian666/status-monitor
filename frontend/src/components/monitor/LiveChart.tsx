@@ -25,11 +25,13 @@ export default function LiveChart({ monitorId }: Props) {
   useEffect(() => {
     resultsApi.latest(monitorId, 100).then((results) => {
       setData(
-        results.map((r) => ({
-          time: formatTimeShort(r.checked_at),
-          latency: r.latency_ms,
-          success: r.is_success,
-        }))
+        results
+          .reverse()
+          .map((r) => ({
+            time: formatTimeShort(r.checked_at),
+            latency: r.latency_ms,
+            success: r.is_success,
+          }))
       );
     });
   }, [monitorId]);
@@ -39,8 +41,10 @@ export default function LiveChart({ monitorId }: Props) {
     const latest = storeResults[storeResults.length - 1];
     if (!latest) return;
     setData((prev) => {
+      const newTime = formatTimeShort(latest.checked_at);
+      if (prev.length > 0 && prev[prev.length - 1].time === newTime) return prev;
       const newPoint = {
-        time: formatTimeShort(latest.checked_at),
+        time: newTime,
         latency: latest.latency_ms,
         success: latest.is_success,
       };
