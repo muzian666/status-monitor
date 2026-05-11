@@ -180,7 +180,7 @@ function TopologyCanvasInner({ mode }: Props) {
             setTracing(false);
 
             const topo = await tracerouteApi.getTopology(runId);
-            const laidOut = autoLayout(
+            const laidOut = zigzagLayout(
               (topo.nodes as Node[]).map((n: any) => ({ ...n, position: { x: 0, y: 0 } })),
               topo.edges as Edge[]
             );

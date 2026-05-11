@@ -25,6 +25,13 @@ class CheckResultCreate(BaseModel):
     dns_result: str | None = None
 
 
+class DowntimePeriod(BaseModel):
+    started_at: datetime
+    recovered_at: datetime | None
+    duration_seconds: float | None
+    error_message: str | None
+
+
 class MonitorStats(BaseModel):
     monitor_id: int
     total_checks: int

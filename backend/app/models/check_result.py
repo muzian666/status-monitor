@@ -1,9 +1,13 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
+
+
+def utcnow():
+    return datetime.now(timezone.utc)
 
 
 class CheckResult(Base):
@@ -16,4 +20,4 @@ class CheckResult(Base):
     status_code: Mapped[int | None] = mapped_column(Integer, nullable=True)
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     dns_result: Mapped[str | None] = mapped_column(Text, nullable=True)
-    checked_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    checked_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)

@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, select
@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.models.check_result import CheckResult
 from app.models.monitor import Monitor
-from app.schemas.check_result import CheckResultResponse, MonitorStats
+from app.schemas.check_result import CheckResultResponse, DowntimePeriod, MonitorStats
 
 router = APIRouter(prefix="/results", tags=["results"])
 
@@ -83,7 +83,7 @@ async def get_monitor_stats(
     if not monitor:
         raise HTTPException(404, "Monitor not found")
 
-    since = datetime.utcnow() - timedelta(hours=hours)
+    since = datetime.now(timezone.utc) - timedelta(hours=hours)
 
     total_stmt = select(func.count()).where(
         CheckResult.monitor_id == monitor_id, CheckResult.checked_at >= since
@@ -137,3 +137,59 @@ async def get_monitor_stats(
         max_latency_ms=round(max_lat, 2) if max_lat else None,
         p95_latency_ms=round(p95, 2) if p95 else None,
     )
+
+
+@router.get("/monitor/{monitor_id}/downtimes", response_model=list[DowntimePeriod])
+async def get_downtimes(
+    monitor_id: int,
+    hours: int = Query(168, ge=1, le=2160),
+    db: AsyncSession = Depends(get_db),
+):
+    monitor = await db.get(Monitor, monitor_id)
+    if not monitor:
+        raise HTTPException(404, "Monitor not found")
+
+    since = datetime.now(timezone.utc) - timedelta(hours=hours)
+    stmt = (
+        select(CheckResult)
+        .where(CheckResult.monitor_id == monitor_id, CheckResult.checked_at >= since)
+        .order_by(CheckResult.checked_at.asc())
+    )
+    result = await db.execute(stmt)
+    rows = result.scalars().all()
+
+    downtimes: list[DowntimePeriod] = []
+    down_start = None
+    down_error = None
+
+    for r in rows:
+        if not r.is_success:
+            if down_start is None:
+                down_start = r.checked_at
+                down_error = r.error_message
+        else:
+            if down_start is not None:
+                duration = (r.checked_at - down_start).total_seconds()
+                downtimes.append(
+                    DowntimePeriod(
+                        started_at=down_start,
+                        recovered_at=r.checked_at,
+                        duration_seconds=duration,
+                        error_message=down_error,
+                    )
+                )
+                down_start = None
+                down_error = None
+
+    if down_start is not None:
+        downtimes.append(
+            DowntimePeriod(
+                started_at=down_start,
+                recovered_at=None,
+                duration_seconds=None,
+                error_message=down_error,
+            )
+        )
+
+    downtimes.reverse()
+    return downtimes

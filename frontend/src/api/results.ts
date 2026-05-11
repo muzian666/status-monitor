@@ -1,5 +1,5 @@
 import api from './client';
-import type { CheckResult, MonitorStats } from '../types/monitor';
+import type { CheckResult, DowntimePeriod, MonitorStats } from '../types/monitor';
 
 export const resultsApi = {
   list: (monitorId: number, params?: { limit?: number; offset?: number }) =>
@@ -10,6 +10,9 @@ export const resultsApi = {
 
   stats: (monitorId: number, hours = 24) =>
     api.get<MonitorStats>(`/results/monitor/${monitorId}/stats`, { params: { hours } }).then((r) => r.data),
+
+  downtimes: (monitorId: number, hours = 168) =>
+    api.get<DowntimePeriod[]>(`/results/monitor/${monitorId}/downtimes`, { params: { hours } }).then((r) => r.data),
 
   latestAll: () =>
     api.get<Record<number, CheckResult>>('/results/latest-all').then((r) => r.data),

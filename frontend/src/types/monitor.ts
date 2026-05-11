@@ -60,3 +60,10 @@ export interface MonitorStats {
   max_latency_ms: number | null;
   p95_latency_ms: number | null;
 }
+
+export interface DowntimePeriod {
+  started_at: string;
+  recovered_at: string | null;
+  duration_seconds: number | null;
+  error_message: string | null;
+}

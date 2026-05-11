@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { formatTimeShort } from '../../utils/time';
 import {
   LineChart,
   Line,
@@ -25,7 +26,7 @@ export default function LiveChart({ monitorId }: Props) {
     resultsApi.latest(monitorId, 100).then((results) => {
       setData(
         results.map((r) => ({
-          time: new Date(r.checked_at).toLocaleTimeString(),
+          time: formatTimeShort(r.checked_at),
           latency: r.latency_ms,
           success: r.is_success,
         }))
@@ -39,7 +40,7 @@ export default function LiveChart({ monitorId }: Props) {
     if (!latest) return;
     setData((prev) => {
       const newPoint = {
-        time: new Date(latest.checked_at).toLocaleTimeString(),
+        time: formatTimeShort(latest.checked_at),
         latency: latest.latency_ms,
         success: latest.is_success,
       };

@@ -3,7 +3,7 @@ import ipaddress
 import platform
 import re
 import socket
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import select
 
@@ -170,7 +170,7 @@ async def run_traceroute(run_id: int, target_host: str):
             run = await db.get(TracerouteRun, run_id)
             if run:
                 run.status = TracerouteStatus.COMPLETED
-                run.completed_at = datetime.utcnow()
+                run.completed_at = datetime.now(timezone.utc)
                 run.total_hops = hop_number
                 await db.commit()
 
@@ -188,7 +188,7 @@ async def run_traceroute(run_id: int, target_host: str):
             run = await db.get(TracerouteRun, run_id)
             if run:
                 run.status = TracerouteStatus.FAILED
-                run.completed_at = datetime.utcnow()
+                run.completed_at = datetime.now(timezone.utc)
                 await db.commit()
 
             await ws_manager.broadcast(

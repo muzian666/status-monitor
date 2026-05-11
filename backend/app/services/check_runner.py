@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from app.checkers.dns import DnsChecker
 from app.checkers.http import HttpChecker
@@ -40,7 +40,7 @@ async def run_check(monitor) -> dict:
             status_code=result.status_code,
             error_message=result.error_message,
             dns_result=result.dns_result,
-            checked_at=datetime.utcnow(),
+            checked_at=datetime.now(timezone.utc),
         )
         db.add(check)
         await db.commit()

@@ -5,6 +5,7 @@ import { monitorsApi } from '../../api/monitors';
 import { resultsApi } from '../../api/results';
 import { useStore } from '../../store';
 import MonitorForm from './MonitorForm';
+import DeleteConfirmModal from '../common/DeleteConfirmModal';
 import type { Monitor } from '../../types/monitor';
 
 export default function MonitorListPage() {
@@ -18,6 +19,7 @@ export default function MonitorListPage() {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Monitor | null>(null);
   const [loading, setLoading] = useState(true);
+  const [deleting, setDeleting] = useState<Monitor | null>(null);
 
   const load = async () => {
     try {
@@ -36,8 +38,8 @@ export default function MonitorListPage() {
   useEffect(() => { load(); }, []);
 
   const handleDelete = async (id: number) => {
-    if (!confirm(t('deleteConfirm'))) return;
     await monitorsApi.delete(id);
+    setDeleting(null);
     await load();
   };
 
@@ -121,7 +123,7 @@ export default function MonitorListPage() {
                     <button onClick={() => handleEdit(m)} className="text-xs px-3 py-1 rounded bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 transition-colors">
                       {tc('edit')}
                     </button>
-                    <button onClick={() => handleDelete(m.id)} className="text-xs px-3 py-1 rounded bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 text-red-600 dark:text-red-400 transition-colors">
+                    <button onClick={() => setDeleting(m)} className="text-xs px-3 py-1 rounded bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 text-red-600 dark:text-red-400 transition-colors">
                       {tc('delete')}
                     </button>
                   </td>
@@ -135,6 +137,13 @@ export default function MonitorListPage() {
       {showForm && (
         <MonitorForm monitor={editing} onSave={handleFormSave} onClose={handleFormClose} />
       )}
+
+      <DeleteConfirmModal
+        open={!!deleting}
+        name={deleting?.name ?? ''}
+        onConfirm={() => deleting && handleDelete(deleting.id)}
+        onCancel={() => setDeleting(null)}
+      />
     </div>
   );
 }

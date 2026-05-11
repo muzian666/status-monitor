@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
+from app.models.check_result import CheckResult
 from app.models.monitor import Monitor
 from app.schemas.monitor import MonitorCreate, MonitorResponse, MonitorUpdate
 
@@ -79,6 +80,7 @@ async def delete_monitor(monitor_id: int, db: AsyncSession = Depends(get_db)):
     from app.services.monitor_scheduler import scheduler
 
     await scheduler.remove_job(monitor_id)
+    await db.execute(delete(CheckResult).where(CheckResult.monitor_id == monitor_id))
     await db.delete(monitor)
     await db.commit()
 
