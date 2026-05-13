@@ -3,9 +3,13 @@ import { useStore } from '../store';
 
 export function useWebSocket() {
   const [isConnected, setIsConnected] = useState(false);
+  const [latencyMs, setLatencyMs] = useState<number | null>(null);
+  const [connectedAt, setConnectedAt] = useState<number | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeout = useRef<number>(1000);
   const mounted = useRef(true);
+  const pingTimer = useRef<ReturnType<typeof setInterval>>();
+  const pingSeq = useRef(0);
 
   const addResult = useStore((s) => s.addResult);
   const addTracerouteHop = useStore((s) => s.addTracerouteHop);
@@ -24,13 +28,29 @@ export function useWebSocket() {
         ws.onopen = () => {
           if (!mounted.current) return;
           setIsConnected(true);
+          setConnectedAt(Date.now());
           reconnectTimeout.current = 1000;
+
+          // Start latency measurement via ping/pong
+          pingTimer.current = setInterval(() => {
+            if (ws.readyState === WebSocket.OPEN) {
+              pingSeq.current++;
+              ws.send(JSON.stringify({ type: 'ping', ts: Date.now(), seq: pingSeq.current }));
+            }
+          }, 5000);
         };
 
         ws.onmessage = (event) => {
           try {
             const msg = JSON.parse(event.data);
             if (!mounted.current) return;
+
+            if (msg.type === 'pong') {
+              const rtt = Date.now() - msg.ts;
+              setLatencyMs(rtt);
+              return;
+            }
+
             switch (msg.type) {
               case 'check_result':
                 addResult(msg.data);
@@ -50,6 +70,9 @@ export function useWebSocket() {
         ws.onclose = () => {
           if (!mounted.current) return;
           setIsConnected(false);
+          setLatencyMs(null);
+          setConnectedAt(null);
+          clearInterval(pingTimer.current);
           const delay = Math.min(reconnectTimeout.current * 2, 30000);
           reconnectTimeout.current = delay;
           setTimeout(connect, delay);
@@ -61,7 +84,6 @@ export function useWebSocket() {
 
         wsRef.current = ws;
       } catch {
-        // WebSocket not available, retry later
         if (mounted.current) {
           setTimeout(connect, 5000);
         }
@@ -72,9 +94,10 @@ export function useWebSocket() {
 
     return () => {
       mounted.current = false;
+      clearInterval(pingTimer.current);
       wsRef.current?.close();
     };
   }, [addResult, addTracerouteHop, completeTraceroute]);
 
-  return { isConnected };
+  return { isConnected, latencyMs, connectedAt };
 }

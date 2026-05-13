@@ -40,6 +40,16 @@
     "connected": "已连接",
     "disconnected": "已断开"
   },
+  "header": {
+    "backendUrl": "后端地址",
+    "connectionStatus": "WebSocket 连接状态",
+    "wsLatency": "WebSocket 延迟",
+    "troubleshooting": "排查建议",
+    "tip1": "检查后端服务是否运行（默认端口 8000）",
+    "tip2": "确认后端地址和网络连通性",
+    "tip3": "打开浏览器控制台（F12）查看错误详情",
+    "tip4": "后端恢复后页面将自动重连"
+  },
   "language": {
     "en": "English",
     "zh": "中文"

@@ -40,6 +40,16 @@
     "connected": "Connected",
     "disconnected": "Disconnected"
   },
+  "header": {
+    "backendUrl": "Backend Address",
+    "connectionStatus": "WebSocket Status",
+    "wsLatency": "WebSocket Latency",
+    "troubleshooting": "Troubleshooting",
+    "tip1": "Check if the backend service is running (default port 8000)",
+    "tip2": "Verify the backend address and network connectivity",
+    "tip3": "Check browser console (F12) for error details",
+    "tip4": "The page will auto-reconnect once the backend is back online"
+  },
   "language": {
     "en": "English",
     "zh": "中文"
