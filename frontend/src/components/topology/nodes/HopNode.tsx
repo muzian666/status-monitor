@@ -3,31 +3,11 @@ import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 
 const TYPE_CONFIG: Record<string, { icon: string; color: string; bg: string }> = {
-  gateway: {
-    icon: '🏠',
-    color: 'text-blue-700 dark:text-blue-300',
-    bg: 'bg-blue-100 dark:bg-blue-900/40',
-  },
-  lan: {
-    icon: '🔗',
-    color: 'text-purple-700 dark:text-purple-300',
-    bg: 'bg-purple-100 dark:bg-purple-900/40',
-  },
-  transit: {
-    icon: '🌍',
-    color: 'text-cyan-700 dark:text-cyan-300',
-    bg: 'bg-cyan-100 dark:bg-cyan-900/40',
-  },
-  target: {
-    icon: '🎯',
-    color: 'text-green-700 dark:text-green-300',
-    bg: 'bg-green-100 dark:bg-green-900/40',
-  },
-  unknown: {
-    icon: '❓',
-    color: 'text-gray-600 dark:text-gray-400',
-    bg: 'bg-gray-200 dark:bg-gray-700',
-  },
+  gateway: { icon: '🏠', color: 'text-blue-700 dark:text-blue-300', bg: 'bg-blue-100 dark:bg-blue-900/40' },
+  lan: { icon: '🔗', color: 'text-purple-700 dark:text-purple-300', bg: 'bg-purple-100 dark:bg-purple-900/40' },
+  transit: { icon: '🌍', color: 'text-cyan-700 dark:text-cyan-300', bg: 'bg-cyan-100 dark:bg-cyan-900/40' },
+  target: { icon: '🎯', color: 'text-green-700 dark:text-green-300', bg: 'bg-green-100 dark:bg-green-900/40' },
+  unknown: { icon: '❓', color: 'text-gray-600 dark:text-gray-400', bg: 'bg-gray-200 dark:bg-gray-700' },
 };
 
 export default function HopNode({ data }: NodeProps) {
@@ -52,10 +32,11 @@ export default function HopNode({ data }: NodeProps) {
           : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600'
       }`}
     >
-      <Handle type="target" position={Position.Top} className="!bg-gray-400 !w-2.5 !h-2.5 !border-2 !border-gray-300" />
+      <Handle type="target" position={Position.Top} id="target-top" />
+      <Handle type="target" position={Position.Bottom} id="target-bottom" />
+      <Handle type="target" position={Position.Left} id="target-left" />
 
       <div className="space-y-1.5">
-        {/* Header: hop number + type badge + status */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5">
             <span className="text-xs font-bold px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
@@ -68,7 +49,6 @@ export default function HopNode({ data }: NodeProps) {
           <div className={`w-2 h-2 rounded-full ${isTimeout ? 'bg-red-500' : 'bg-green-500'}`} />
         </div>
 
-        {/* Main info */}
         {isTimeout ? (
           <p className="text-sm font-medium text-red-500 dark:text-red-400">* * * Request timed out</p>
         ) : (
@@ -82,7 +62,6 @@ export default function HopNode({ data }: NodeProps) {
           </>
         )}
 
-        {/* Latency bar */}
         {latency != null && !isTimeout && (
           <div className="flex items-center gap-1.5 pt-0.5">
             <span className={`text-xs font-mono font-semibold ${
@@ -108,7 +87,9 @@ export default function HopNode({ data }: NodeProps) {
         )}
       </div>
 
-      <Handle type="source" position={Position.Bottom} className="!bg-gray-400 !w-2.5 !h-2.5 !border-2 !border-gray-300" />
+      <Handle type="source" position={Position.Bottom} id="source-bottom" />
+      <Handle type="source" position={Position.Top} id="source-top" />
+      <Handle type="source" position={Position.Right} id="source-right" />
     </motion.div>
   );
 }

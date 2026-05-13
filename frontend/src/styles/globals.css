@@ -38,3 +38,15 @@ body {
 .react-flow__node {
   cursor: pointer;
 }
+
+.react-flow__handle {
+  width: 0 !important;
+  height: 0 !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  padding: 0 !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}

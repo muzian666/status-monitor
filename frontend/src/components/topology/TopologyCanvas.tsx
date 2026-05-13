@@ -50,17 +50,27 @@ function TopologyCanvasInner({ mode }: Props) {
   const [currentRunId, setCurrentRunId] = useState<number | null>(null);
   const tracerouteHops = useStore((s) => s.tracerouteHops);
   const { fitView } = useReactFlow();
+
+  const autoFitRef = useRef(false);
+  const fitViewRef = useRef(fitView);
+  fitViewRef.current = fitView;
   const fitViewTimer = useRef<ReturnType<typeof setTimeout>>();
 
-  // Auto-fit view after nodes change, debounced
+  // Refs to access current nodes/edges in async callbacks without stale closures
+  const nodesRef = useRef<Node[]>([]);
+  const edgesRef = useRef<Edge[]>([]);
+  useEffect(() => { nodesRef.current = nodes; }, [nodes]);
+  useEffect(() => { edgesRef.current = edges; }, [edges]);
+
+  // Auto-fit view — only during active tracing
   useEffect(() => {
-    if (nodes.length === 0) return;
+    if (nodes.length === 0 || !autoFitRef.current) return;
     clearTimeout(fitViewTimer.current);
     fitViewTimer.current = setTimeout(() => {
-      fitView({ padding: 0.15, duration: 300 });
+      fitViewRef.current({ padding: 0.15, duration: 300 });
     }, 100);
     return () => clearTimeout(fitViewTimer.current);
-  }, [nodes, fitView]);
+  }, [nodes]);
 
   const onConnect = useCallback(
     (params: any) => setEdges((eds) => eds.concat(params as Edge)),
@@ -71,7 +81,7 @@ function TopologyCanvasInner({ mode }: Props) {
     if (mode === 'manual') loadManualGraph();
   }, [mode]);
 
-  // Build topology from WebSocket hops in real-time with auto-layout
+  // Build topology from WebSocket hops in real-time with U-shape layout
   useEffect(() => {
     if (!currentRunId || !tracing) return;
     const hops = tracerouteHops[currentRunId] || [];
@@ -116,9 +126,9 @@ function TopologyCanvasInner({ mode }: Props) {
       prevId = nodeId;
     });
 
-    const laidOut = zigzagLayout(rawNodes, newEdges);
-    setNodes(laidOut);
-    setEdges(newEdges);
+    const { nodes: laidOutNodes, edges: laidOutEdges } = zigzagLayout(rawNodes, newEdges);
+    setNodes(laidOutNodes);
+    setEdges(laidOutEdges);
   }, [tracerouteHops, currentRunId, tracing, t, setNodes, setEdges]);
 
   const loadManualGraph = async () => {
@@ -153,6 +163,7 @@ function TopologyCanvasInner({ mode }: Props) {
 
   const handleTrace = async () => {
     if (!targetHost.trim()) return;
+    autoFitRef.current = true;
     setTracing(true);
     setNodes([]);
     setEdges([]);
@@ -177,23 +188,53 @@ function TopologyCanvasInner({ mode }: Props) {
           const run = await tracerouteApi.getRun(runId);
           if (run.status !== 'running') {
             clearInterval(pollInterval);
+            autoFitRef.current = false;
+
+            // Append target node to existing layout
+            const isFailed = run.status === 'failed';
+            const lastNodeId = nodesRef.current.length > 0
+              ? nodesRef.current[nodesRef.current.length - 1].id
+              : 'source';
+
+            const targetNode: Node = {
+              id: 'target',
+              type: 'target',
+              position: { x: 0, y: 0 },
+              data: {
+                label: targetHost,
+                ip: targetHost,
+                is_failed: isFailed,
+                reached: run.status === 'completed' && !isFailed,
+              },
+            };
+            const targetEdge: Edge = {
+              id: `edge-${lastNodeId}-target`,
+              source: lastNodeId,
+              target: 'target',
+              type: 'animated',
+              animated: !isFailed,
+              data: { is_timeout: isFailed },
+            };
+
+            const allNodes = [...nodesRef.current, targetNode];
+            const allEdges = [...edgesRef.current, targetEdge];
+            const { nodes: laidOutNodes, edges: laidOutEdges } = zigzagLayout(allNodes, allEdges);
+            setNodes(laidOutNodes);
+            setEdges(laidOutEdges);
             setTracing(false);
 
-            const topo = await tracerouteApi.getTopology(runId);
-            const laidOut = zigzagLayout(
-              (topo.nodes as Node[]).map((n: any) => ({ ...n, position: { x: 0, y: 0 } })),
-              topo.edges as Edge[]
-            );
-            setNodes(laidOut);
-            setEdges(topo.edges as Edge[]);
+            // One final fit to show complete path
+            setTimeout(() => fitViewRef.current({ padding: 0.15, duration: 400 }), 50);
           }
         } catch {
           clearInterval(pollInterval);
+          autoFitRef.current = false;
           setTracing(false);
         }
       }, 2000);
     } catch (err) {
       console.error('Traceroute failed:', err);
+      autoFitRef.current = false;
       setTracing(false);
     }
   };

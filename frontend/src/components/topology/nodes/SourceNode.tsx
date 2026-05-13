@@ -10,7 +10,8 @@ export default function SourceNode({ data }: NodeProps) {
           <p className="text-xs text-blue-200">localhost</p>
         </div>
       </div>
-      <Handle type="source" position={Position.Bottom} className="!bg-blue-300 !w-3 !h-3 !border-2 !border-blue-500" />
+      <Handle type="source" position={Position.Bottom} id="source-bottom" />
+      <Handle type="source" position={Position.Right} id="source-right" />
     </div>
   );
 }

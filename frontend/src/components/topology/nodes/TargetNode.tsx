@@ -5,7 +5,6 @@ export default function TargetNode({ data }: NodeProps) {
   const label = data.label as string;
   const ip = data.ip as string;
   const isFailed = data.is_failed as boolean;
-  const reached = data.reached as boolean;
 
   const borderColor = isFailed
     ? 'border-red-400 dark:border-red-600'
@@ -20,7 +19,9 @@ export default function TargetNode({ data }: NodeProps) {
       animate={{ opacity: 1, scale: 1 }}
       className={`px-4 py-3 rounded-xl shadow-lg border-2 ${borderColor} ${bg} min-w-[160px]`}
     >
-      <Handle type="target" position={Position.Top} className="!bg-gray-400 !w-2.5 !h-2.5 !border-2 !border-gray-300" />
+      <Handle type="target" position={Position.Top} id="target-top" />
+      <Handle type="target" position={Position.Bottom} id="target-bottom" />
+      <Handle type="target" position={Position.Left} id="target-left" />
       <div className="flex items-center gap-2">
         <span className="text-lg">{isFailed ? '❌' : '✅'}</span>
         <div>
