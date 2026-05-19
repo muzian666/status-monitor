@@ -32,7 +32,11 @@
     "downtimeTitle": "中断记录",
     "noDowntime": "暂无中断记录",
     "ongoing": "持续中",
-    "duration": "持续时间"
+    "duration": "持续时间",
+    "uptimeBar": "可用性（最近 24 小时）",
+    "uptimeBarPercent": "可用率 {{percent}}%",
+    "uptimeNoData": "无数据",
+    "uptimeOk": "正常"
   },
   "protocols": {
     "ping": "Ping",

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { monitorsApi } from '../../api/monitors';
@@ -7,14 +7,19 @@ import { useStore } from '../../store';
 import MonitorCard from './MonitorCard';
 import QuickStats from './QuickStats';
 
+const PAGE_SIZES = [5, 10, 20, 50];
+
 export default function DashboardPage() {
   const { t } = useTranslation('dashboard');
+  const { t: tc } = useTranslation('common');
   const setMonitors = useStore((s) => s.setMonitors);
   const setLatestResults = useStore((s) => s.setLatestResults);
   const monitors = useStore((s) => s.monitors);
   const latestResults = useStore((s) => s.latestResults);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [pageSize, setPageSize] = useState(10);
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     Promise.all([
@@ -36,6 +41,15 @@ export default function DashboardPage() {
     return result?.is_success;
   }).length;
   const unhealthyCount = activeCount - healthyCount;
+
+  const totalPages = Math.max(1, Math.ceil(safeMonitors.length / pageSize));
+  const safePage = Math.min(page, totalPages);
+  if (safePage !== page) setPage(safePage);
+
+  const pagedMonitors = useMemo(
+    () => safeMonitors.slice((safePage - 1) * pageSize, safePage * pageSize),
+    [safeMonitors, safePage, pageSize]
+  );
 
   if (loading) {
     return (
@@ -79,7 +93,7 @@ export default function DashboardPage() {
       />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {safeMonitors.map((monitor, i) => (
+        {pagedMonitors.map((monitor, i) => (
           <MonitorCard key={monitor.id} monitor={monitor} index={i} />
         ))}
       </div>
@@ -87,6 +101,43 @@ export default function DashboardPage() {
       {safeMonitors.length === 0 && (
         <div className="text-center py-12 text-gray-500 dark:text-gray-400">
           {t('noData', { ns: 'common' })}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {safeMonitors.length > 0 && (
+        <div className="flex items-center justify-between px-1 py-2">
+          <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+            <span>{tc('total', { count: safeMonitors.length })}</span>
+            <select
+              value={pageSize}
+              onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}
+              className="ml-2 px-2 py-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-700 dark:text-gray-300"
+            >
+              {PAGE_SIZES.map((s) => (
+                <option key={s} value={s}>{s} {tc('perPage')}</option>
+              ))}
+            </select>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={safePage <= 1}
+              className="px-3 py-1.5 rounded text-sm font-medium border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              {tc('prev')}
+            </button>
+            <span className="text-sm text-gray-600 dark:text-gray-400 tabular-nums">
+              {safePage} / {totalPages}
+            </span>
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={safePage >= totalPages}
+              className="px-3 py-1.5 rounded text-sm font-medium border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              {tc('next')}
+            </button>
+          </div>
         </div>
       )}
     </div>

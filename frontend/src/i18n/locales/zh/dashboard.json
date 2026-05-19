@@ -5,5 +5,6 @@
   "healthyMonitors": "正常",
   "unhealthyMonitors": "异常",
   "recentActivity": "最近活动",
-  "quickStats": "快速统计"
+  "quickStats": "快速统计",
+  "healthRate": "健康率"
 }

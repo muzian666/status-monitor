@@ -32,7 +32,11 @@
     "downtimeTitle": "Downtime History",
     "noDowntime": "No downtime recorded",
     "ongoing": "Ongoing",
-    "duration": "Duration"
+    "duration": "Duration",
+    "uptimeBar": "Uptime (Last 24h)",
+    "uptimeBarPercent": "{{percent}}% uptime",
+    "uptimeNoData": "No data",
+    "uptimeOk": "ok"
   },
   "protocols": {
     "ping": "Ping",

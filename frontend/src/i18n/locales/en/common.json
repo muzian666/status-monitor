@@ -38,7 +38,12 @@
     "failed": "Failed",
     "noData": "No data",
     "connected": "Connected",
-    "disconnected": "Disconnected"
+    "disconnected": "Disconnected",
+    "perPage": "Per page",
+    "page": "Page",
+    "total": "Total {{count}} items",
+    "prev": "Previous",
+    "next": "Next"
   },
   "header": {
     "backendUrl": "Backend Address",

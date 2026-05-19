@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
@@ -8,6 +8,9 @@ import { useStore } from '../../store';
 import { formatTime } from '../../utils/time';
 import type { Monitor, MonitorStats, DowntimePeriod } from '../../types/monitor';
 import LiveChart from './LiveChart';
+import UptimeBar from './UptimeBar';
+
+const PAGE_SIZES = [5, 10, 20];
 
 function formatDuration(seconds: number): string {
   if (seconds < 60) return `${Math.round(seconds)}s`;
@@ -26,12 +29,15 @@ export default function MonitorDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation('monitor');
+  const { t: tc } = useTranslation('common');
   const latestResult = useStore((s) => s.latestResults[Number(id)]);
 
   const [monitor, setMonitor] = useState<Monitor | null>(null);
   const [stats, setStats] = useState<MonitorStats | null>(null);
   const [downtimes, setDowntimes] = useState<DowntimePeriod[]>([]);
   const [loading, setLoading] = useState(true);
+  const [pageSize, setPageSize] = useState(5);
+  const [page, setPage] = useState(1);
 
   const loadDetails = useCallback(async () => {
     if (!id) return;
@@ -60,6 +66,16 @@ export default function MonitorDetailPage() {
     if (!id) return;
     await monitorsApi.triggerCheck(Number(id));
   };
+
+  // Downtime pagination
+  const totalDowntimePages = Math.max(1, Math.ceil(downtimes.length / pageSize));
+  const safePage = Math.min(page, totalDowntimePages);
+  if (safePage !== page) setPage(safePage);
+
+  const pagedDowntimes = useMemo(
+    () => downtimes.slice((safePage - 1) * pageSize, safePage * pageSize),
+    [downtimes, safePage, pageSize]
+  );
 
   if (loading || !monitor) {
     return (
@@ -124,6 +140,13 @@ export default function MonitorDetailPage() {
 
       <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+          {t('detail.uptimeBar')}
+        </h2>
+        <UptimeBar monitorId={Number(id)} />
+      </div>
+
+      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
           {t('detail.latencyChart')}
         </h2>
         <LiveChart monitorId={Number(id)} />
@@ -138,42 +161,79 @@ export default function MonitorDetailPage() {
             {t('detail.noDowntime')}
           </p>
         ) : (
-          <div className="space-y-3">
-            {downtimes.map((d, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.05 }}
-                className="flex items-start gap-3 p-3 rounded-lg bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800/30"
-              >
-                <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${
-                  d.recovered_at ? 'bg-red-400' : 'bg-red-600 animate-pulse'
-                }`} />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 text-sm">
-                    <span className="font-medium text-gray-900 dark:text-white">
-                      {formatTime(d.started_at)}
-                    </span>
-                    <span className="text-gray-400">&rarr;</span>
-                    <span className="font-medium text-gray-900 dark:text-white">
-                      {d.recovered_at ? formatTime(d.recovered_at) : t('detail.ongoing')}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-3 mt-1">
-                    <span className="text-xs text-red-600 dark:text-red-400 font-medium">
-                      {t('detail.duration')}: {d.duration_seconds != null ? formatDuration(d.duration_seconds) : t('detail.ongoing')}
-                    </span>
-                    {d.error_message && (
-                      <span className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                        {d.error_message}
+          <>
+            <div className="space-y-3">
+              {pagedDowntimes.map((d, i) => (
+                <motion.div
+                  key={(safePage - 1) * pageSize + i}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                  className="flex items-start gap-3 p-3 rounded-lg bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800/30"
+                >
+                  <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${
+                    d.recovered_at ? 'bg-red-400' : 'bg-red-600 animate-pulse'
+                  }`} />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 text-sm">
+                      <span className="font-medium text-gray-900 dark:text-white">
+                        {formatTime(d.started_at)}
                       </span>
-                    )}
+                      <span className="text-gray-400">&rarr;</span>
+                      <span className="font-medium text-gray-900 dark:text-white">
+                        {d.recovered_at ? formatTime(d.recovered_at) : t('detail.ongoing')}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3 mt-1">
+                      <span className="text-xs text-red-600 dark:text-red-400 font-medium">
+                        {t('detail.duration')}: {d.duration_seconds != null ? formatDuration(d.duration_seconds) : t('detail.ongoing')}
+                      </span>
+                      {d.error_message && (
+                        <span className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                          {d.error_message}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+                </motion.div>
+              ))}
+            </div>
+
+            {/* Pagination */}
+            <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-200 dark:border-gray-700">
+              <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                <span>{tc('total', { count: downtimes.length })}</span>
+                <select
+                  value={pageSize}
+                  onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}
+                  className="ml-2 px-2 py-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-700 dark:text-gray-300"
+                >
+                  {PAGE_SIZES.map((s) => (
+                    <option key={s} value={s}>{s} {tc('perPage')}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={safePage <= 1}
+                  className="px-3 py-1.5 rounded text-sm font-medium border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  {tc('prev')}
+                </button>
+                <span className="text-sm text-gray-600 dark:text-gray-400 tabular-nums">
+                  {safePage} / {totalDowntimePages}
+                </span>
+                <button
+                  onClick={() => setPage((p) => Math.min(totalDowntimePages, p + 1))}
+                  disabled={safePage >= totalDowntimePages}
+                  className="px-3 py-1.5 rounded text-sm font-medium border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  {tc('next')}
+                </button>
+              </div>
+            </div>
+          </>
         )}
       </div>
     </div>
