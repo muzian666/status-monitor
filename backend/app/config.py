@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     database_url: str = ""
     data_dir: str = ""
     cors_origins: str = "*"
+    retention_days: int = 30
 
     def get_database_url(self) -> str:
         if self.database_url:

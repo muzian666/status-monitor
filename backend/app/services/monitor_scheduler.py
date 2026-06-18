@@ -68,6 +68,28 @@ class MonitorScheduler:
                 await self.add_job(monitor)
         logger.info(f"Loaded {len(monitors)} active monitors")
 
+    def schedule_retention(self, retention_days: int):
+        """Hourly purge of check results / traceroute runs older than retention_days."""
+        if retention_days <= 0:
+            logger.info("Result retention purge disabled (retention_days <= 0)")
+            return
+        from app.services.retention import run_retention_purge
+
+        self._scheduler.add_job(
+            run_retention_purge,
+            "interval",
+            hours=1,
+            id="retention_purge",
+            args=[retention_days],
+            replace_existing=True,
+            coalesce=True,
+            max_instances=1,
+        )
+        logger.info(
+            "Scheduled result retention purge: keep %d days, run hourly",
+            retention_days,
+        )
+
     async def add_job(self, monitor: Monitor, run_immediately: bool = True):
         job_id = f"monitor_{monitor.id}"
         next_run_time = None

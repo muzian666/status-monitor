@@ -23,6 +23,7 @@ async def lifespan(app: FastAPI):
     await create_tables()
     scheduler.start()
     await scheduler.load_active_monitors()
+    scheduler.schedule_retention(settings.retention_days)
     logger.info("Status Monitor started")
     yield
     scheduler.shutdown()

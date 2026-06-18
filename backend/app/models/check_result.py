@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, Text
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Index, Integer, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -12,6 +12,11 @@ def utcnow():
 
 class CheckResult(Base):
     __tablename__ = "check_results"
+    # Speeds up the retention purge (WHERE checked_at < cutoff) and the stats
+    # queries that filter/sort by (monitor_id, checked_at).
+    __table_args__ = (
+        Index("ix_check_results_monitor_checked", "monitor_id", "checked_at"),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     monitor_id: Mapped[int] = mapped_column(Integer, ForeignKey("monitors.id"), nullable=False)
