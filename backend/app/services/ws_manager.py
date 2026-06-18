@@ -1,3 +1,4 @@
+import asyncio
 import json
 from fastapi import WebSocket
 
@@ -15,15 +16,20 @@ class WebSocketManager:
             self.connections.remove(ws)
 
     async def broadcast(self, message: dict):
+        # Fan out concurrently so one slow/stuck client cannot block delivery
+        # to everyone else. return_exceptions keeps a single failure from
+        # cancelling the whole gather.
+        conns = list(self.connections)
+        if not conns:
+            return
         data = json.dumps(message, default=str)
-        dead = []
-        for ws in self.connections:
-            try:
-                await ws.send_text(data)
-            except Exception:
-                dead.append(ws)
-        for ws in dead:
-            self.disconnect(ws)
+        results = await asyncio.gather(
+            *(ws.send_text(data) for ws in conns),
+            return_exceptions=True,
+        )
+        for ws, result in zip(conns, results):
+            if isinstance(result, Exception):
+                self.disconnect(ws)
 
 
 ws_manager = WebSocketManager()
