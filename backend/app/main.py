@@ -9,7 +9,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.api import health, monitors, results, topology, traceroute, websocket
 from app.config import parse_cors_origins, settings
-from app.database import create_tables
+from app.database import migrate_database
 from app.services.monitor_scheduler import scheduler
 
 logging.basicConfig(level=logging.INFO)
@@ -20,7 +20,7 @@ cors_origins, allow_credentials = parse_cors_origins(settings.cors_origins)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    await create_tables()
+    await migrate_database()
     scheduler.start()
     await scheduler.load_active_monitors()
     scheduler.schedule_retention(settings.retention_days)

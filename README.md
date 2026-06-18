@@ -156,6 +156,7 @@ Frontend (React + TypeScript + Vite)
 Backend (Python + FastAPI)
   → SQLAlchemy async + SQLite / 异步 ORM + SQLite
   → APScheduler for monitoring jobs / 定时任务调度
+  → Alembic for schema migrations (auto-applied on startup) / 自动迁移
   → WebSocket for real-time broadcast / 实时广播
   → asyncio subprocess for traceroute/ping / 异步子进程执行
   → Reverse DNS resolution for hop hostnames / 反向 DNS 解析
