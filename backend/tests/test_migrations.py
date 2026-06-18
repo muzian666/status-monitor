@@ -1,4 +1,5 @@
 import sqlite3
+from pathlib import Path
 
 import pytest
 from sqlalchemy import inspect
@@ -6,6 +7,14 @@ from sqlalchemy.ext.asyncio import create_async_engine
 
 from app.config import settings
 from app.database import Base, _schema_untracked, migrate_database
+
+
+def _current_head() -> str:
+    from alembic.config import Config
+    from alembic.script import ScriptDirectory
+
+    cfg = Config(str(Path(__file__).parent.parent / "alembic.ini"))
+    return ScriptDirectory.from_config(cfg).get_current_head()
 
 
 def _tabs_and_rev(path: str):
@@ -48,47 +57,67 @@ def test_migrate_fresh_db_creates_schema_and_baseline(tmp_path, monkeypatch):
     assert "monitors" in tabs
     assert "check_results" in tabs
     assert "alembic_version" in tabs
-    assert rev == "0001"
+    assert rev == _current_head()
 
 
 def test_migrate_legacy_db_stamps_baseline_without_losing_data(tmp_path, monkeypatch):
-    db = tmp_path / "legacy.db"
-
-    # Build a legacy schema (created by the old create_all path) with a row.
-    async def seed():
-        engine = create_async_engine(f"sqlite+aiosqlite:///{db}")
-        async with engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
-        await engine.dispose()
-
+    """A pre-Alembic DB (baseline schema, no alembic_version) is stamped and
+    migrated forward without losing rows."""
     import asyncio
-
-    asyncio.run(seed())
-
     import sqlalchemy as sa
+    from alembic import command
+    from alembic.config import Config
+
+    db = tmp_path / "legacy.db"
+    monkeypatch.setattr(settings, "database_url", f"sqlite+aiosqlite:///{db}")
+
+    # Build a DB at the BASELINE (0001) schema — mirrors a pre-migration DB.
+    cfg = Config(str(Path(__file__).parent.parent / "alembic.ini"))
+    command.upgrade(cfg, "0001")
 
     eng = sa.create_engine(f"sqlite:///{db}")
+    # Simulate "untracked": legacy DBs predate the alembic_version table.
     with eng.begin() as conn:
+        conn.execute(sa.text("DROP TABLE alembic_version"))
         conn.execute(
             sa.text(
                 "INSERT INTO monitors (name, protocol, target, interval_seconds, "
                 "timeout_seconds, is_active) VALUES ('m', 'ping', '1.1.1.1', 30, 5, 1)"
             )
         )
+    assert "verify_tls" not in {c["name"] for c in inspect(eng).get_columns("monitors")}
     eng.dispose()
 
-    monkeypatch.setattr(settings, "database_url", f"sqlite+aiosqlite:///{db}")
     asyncio.run(migrate_database())
 
-    tabs, rev = _tabs_and_rev(str(db))
-    assert "alembic_version" in tabs
-    assert rev == "0001"
-    # data survived the stamp
     eng = sa.create_engine(f"sqlite:///{db}")
+    cols = {c["name"] for c in inspect(eng).get_columns("monitors")}
     with eng.begin() as conn:
         count = conn.execute(sa.text("SELECT COUNT(*) FROM monitors")).scalar()
+        ver = conn.execute(sa.text("SELECT version_num FROM alembic_version")).scalar()
     eng.dispose()
-    assert count == 1
+
+    assert "verify_tls" in cols  # later migration applied on top of the stamp
+    assert ver == _current_head()
+    assert count == 1  # data preserved through stamp + upgrade
+
 
 
 _ = pytest  # keep import for fixtures if extended later
+
+
+def test_migrate_creates_verify_tls_column(tmp_path, monkeypatch):
+    """Migration 0002 adds monitors.verify_tls (default true) on a fresh DB."""
+    import asyncio
+    import sqlalchemy as sa
+
+    db = tmp_path / "fresh.db"
+    monkeypatch.setattr(settings, "database_url", f"sqlite+aiosqlite:///{db}")
+    asyncio.run(migrate_database())
+
+    eng = sa.create_engine(f"sqlite:///{db}")
+    cols = {c["name"]: c for c in inspect(eng).get_columns("monitors")}
+    eng.dispose()
+    assert "verify_tls" in cols
+    assert cols["verify_tls"]["default"] in ("true", "1", True)
+

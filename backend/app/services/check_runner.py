@@ -29,6 +29,9 @@ async def run_check(monitor) -> dict:
         kwargs["expected_status"] = monitor.expected_status
     if monitor.dns_record_type:
         kwargs["dns_record_type"] = monitor.dns_record_type
+    # verify_tls only matters for HTTP(S), but passing it unconditionally is
+    # harmless (other checkers ignore unknown kwargs).
+    kwargs["verify_tls"] = monitor.verify_tls if monitor.verify_tls is not None else True
 
     result = await checker.check(monitor.target, monitor.timeout_seconds, **kwargs)
 

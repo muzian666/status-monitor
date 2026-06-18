@@ -10,6 +10,7 @@ export interface Monitor {
   timeout_seconds: number;
   is_active: boolean;
   expected_status: number | null;
+  verify_tls: boolean;
   dns_record_type: string | null;
   created_at: string;
   updated_at: string;
@@ -24,6 +25,7 @@ export interface MonitorCreate {
   timeout_seconds?: number;
   is_active?: boolean;
   expected_status?: number | null;
+  verify_tls?: boolean;
   dns_record_type?: string | null;
 }
 
@@ -36,6 +38,7 @@ export interface MonitorUpdate {
   timeout_seconds?: number;
   is_active?: boolean;
   expected_status?: number | null;
+  verify_tls?: boolean;
   dns_record_type?: string | null;
 }
 

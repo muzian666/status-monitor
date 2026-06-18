@@ -14,6 +14,7 @@ class MonitorCreate(BaseModel):
     timeout_seconds: float = 5.0
     is_active: bool = True
     expected_status: int | None = None
+    verify_tls: bool = True
     dns_record_type: str | None = None
 
 
@@ -26,6 +27,7 @@ class MonitorUpdate(BaseModel):
     timeout_seconds: float | None = None
     is_active: bool | None = None
     expected_status: int | None = None
+    verify_tls: bool | None = None
     dns_record_type: str | None = None
 
 
@@ -39,6 +41,7 @@ class MonitorResponse(BaseModel):
     timeout_seconds: float
     is_active: bool
     expected_status: int | None
+    verify_tls: bool
     dns_record_type: str | None
     created_at: datetime
     updated_at: datetime
