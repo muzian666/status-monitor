@@ -25,6 +25,9 @@ class Settings(BaseSettings):
     retention_days: int = 30
     traceroute_timeout: int = 120
     traceroute_max_concurrency: int = 8
+    # When set (SM_API_KEY), all /api/v1 routes (except health/auth-status) and
+    # the WebSocket require this key. When empty, the API is open (legacy behavior).
+    api_key: str = ""
 
     def get_database_url(self) -> str:
         if self.database_url:

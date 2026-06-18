@@ -177,6 +177,7 @@ Backend (Python + FastAPI)
 | SM_RETENTION_DAYS | 30 | Days of check results / traceroute runs to keep (0 = keep forever) | 保留多少天的检测结果 / Traceroute 记录（0 = 永久保留） |
 | SM_TRACEROUTE_TIMEOUT | 120 | Overall traceroute run timeout in seconds | 单次 Traceroute 运行的总超时（秒） |
 | SM_TRACEROUTE_MAX_CONCURRENCY | 8 | Max concurrent traceroute runs | 最大并发 Traceroute 数量 |
+| SM_API_KEY | (empty) | If set, all API + WebSocket calls require this key (header `X-API-Key` / `?api_key=`); empty = open (no auth) | 若设置，则所有 API 与 WebSocket 调用需附带此密钥；留空 = 不启用认证 |
 
 ---
 

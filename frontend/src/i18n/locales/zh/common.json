@@ -45,6 +45,13 @@
     "prev": "上一页",
     "next": "下一页"
   },
+  "auth": {
+    "title": "需要 API 密钥",
+    "description": "此 Status Monitor 需要 API 密钥。请输入服务端通过 SM_API_KEY 配置的密钥。",
+    "placeholder": "输入 API 密钥",
+    "save": "解锁",
+    "invalid": "API 密钥无效"
+  },
   "header": {
     "backendUrl": "后端地址",
     "connectionStatus": "WebSocket 连接状态",

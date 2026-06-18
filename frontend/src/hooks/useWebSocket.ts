@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useStore } from '../store';
+import { getApiKey } from '../auth';
 
 export function useWebSocket() {
   const [isConnected, setIsConnected] = useState(false);
@@ -22,7 +23,9 @@ export function useWebSocket() {
       if (!mounted.current) return;
       try {
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const wsUrl = `${protocol}//${window.location.host}/api/v1/ws`;
+        const key = getApiKey();
+        const query = key ? `?api_key=${encodeURIComponent(key)}` : '';
+        const wsUrl = `${protocol}//${window.location.host}/api/v1/ws${query}`;
         const ws = new WebSocket(wsUrl);
 
         ws.onopen = () => {
