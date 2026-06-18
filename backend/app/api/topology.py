@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
@@ -53,6 +53,16 @@ async def delete_node(node_id: int, db: AsyncSession = Depends(get_db)):
     node = await db.get(TopologyNode, node_id)
     if not node:
         raise HTTPException(404, "Node not found")
+    # SQLite does not enforce FKs by default, so explicitly remove links that
+    # reference this node to avoid orphaned edges pointing at a deleted node.
+    await db.execute(
+        delete(TopologyLink).where(
+            or_(
+                TopologyLink.source_node_id == node_id,
+                TopologyLink.target_node_id == node_id,
+            )
+        )
+    )
     await db.delete(node)
     await db.commit()
 
