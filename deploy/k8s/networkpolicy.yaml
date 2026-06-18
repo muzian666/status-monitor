@@ -17,6 +17,7 @@ spec:
         - port: 8000
           protocol: TCP
   egress:
+    # DNS (in-cluster kube-dns / CoreDNS)
     - to:
         - namespaceSelector: {}
       ports:
@@ -24,8 +25,10 @@ spec:
           protocol: UDP
         - port: 53
           protocol: TCP
+    # The monitor must reach arbitrary user-defined targets on any host/port
+    # (HTTP/TCP checks) and via ICMP (ping/traceroute). The previous policy only
+    # allowed egress to in-cluster pods, so every external check was denied and
+    # the app could not monitor anything outside the cluster.
     - to:
-        - namespaceSelector: {}
-    # Allow ICMP for ping checks
-    - to:
-        - namespaceSelector: {}
+        - ipBlock:
+            cidr: 0.0.0.0/0
