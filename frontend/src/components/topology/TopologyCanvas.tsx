@@ -152,7 +152,8 @@ function TopologyCanvasInner({ mode }: Props) {
         target: `node-${l.target_node_id}`,
         type: 'animated',
         animated: true,
-        data: { label: l.label, latency: l.latency_ms, status: l.status },
+        // AnimatedEdge reads data.latency_ms / data.is_timeout (not `latency`).
+        data: { label: l.label, latency_ms: l.latency_ms, is_timeout: l.status === 'down' },
       }));
       setNodes(flowNodes);
       setEdges(flowEdges);

@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
+from app.models.check_result import CheckResult
 from app.models.topology import TopologyLink, TopologyNode
 from app.schemas.topology import (
     TopologyGraph,
@@ -98,6 +99,32 @@ async def delete_link(link_id: int, db: AsyncSession = Depends(get_db)):
     await db.commit()
 
 
+async def _latest_results_by_monitor(
+    db: AsyncSession, monitor_ids: set[int]
+) -> dict[int, tuple[str, float | None]]:
+    """Map monitor_id -> (status, latency_ms) from each monitor's newest result.
+
+    status is "up"/"down" so the frontend MonitorNode (which keys on those
+    exact strings) lights up; previously get_graph left status/latency_ms None.
+    """
+    if not monitor_ids:
+        return {}
+    sub = (
+        select(CheckResult.monitor_id, func.max(CheckResult.id).label("max_id"))
+        .where(CheckResult.monitor_id.in_(monitor_ids))
+        .group_by(CheckResult.monitor_id)
+        .subquery()
+    )
+    rows = await db.execute(
+        select(CheckResult.monitor_id, CheckResult.is_success, CheckResult.latency_ms)
+        .join(sub, CheckResult.id == sub.c.max_id)
+    )
+    return {
+        mid: ("up" if ok else "down", lat)
+        for mid, ok, lat in rows.all()
+    }
+
+
 @router.get("/graph", response_model=TopologyGraph)
 async def get_graph(db: AsyncSession = Depends(get_db)):
     nodes_result = await db.execute(select(TopologyNode))
@@ -106,11 +133,25 @@ async def get_graph(db: AsyncSession = Depends(get_db)):
     links_result = await db.execute(select(TopologyLink))
     links = links_result.scalars().all()
 
-    return TopologyGraph(
-        nodes=[
-            TopologyNodeResponse.model_validate(n) for n in nodes
-        ],
-        links=[
-            TopologyLinkResponse.model_validate(l) for l in links
-        ],
-    )
+    monitor_ids = {n.monitor_id for n in nodes if n.monitor_id} | {
+        l.monitor_id for l in links if l.monitor_id
+    }
+    latest = await _latest_results_by_monitor(db, monitor_ids)
+
+    node_responses = []
+    for n in nodes:
+        resp = TopologyNodeResponse.model_validate(n)
+        latest_for_node = latest.get(n.monitor_id) if n.monitor_id else None
+        if latest_for_node:
+            resp.status, resp.latency_ms = latest_for_node
+        node_responses.append(resp)
+
+    link_responses = []
+    for l in links:
+        resp = TopologyLinkResponse.model_validate(l)
+        latest_for_link = latest.get(l.monitor_id) if l.monitor_id else None
+        if latest_for_link:
+            resp.status, resp.latency_ms = latest_for_link
+        link_responses.append(resp)
+
+    return TopologyGraph(nodes=node_responses, links=link_responses)
