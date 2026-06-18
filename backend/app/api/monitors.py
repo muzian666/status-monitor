@@ -57,16 +57,24 @@ async def update_monitor(
         raise HTTPException(404, "Monitor not found")
 
     update_data = body.model_dump(exclude_unset=True)
+    old_interval = monitor.interval_seconds
+    old_active = monitor.is_active
     for k, v in update_data.items():
         setattr(monitor, k, v)
     await db.commit()
     await db.refresh(monitor)
 
-    from app.services.monitor_scheduler import scheduler
+    from app.services.monitor_scheduler import SchedulerAction, decide_scheduler_action, scheduler
 
-    await scheduler.remove_job(monitor_id)
-    if monitor.is_active:
+    action = decide_scheduler_action(
+        old_active, monitor.is_active, old_interval, monitor.interval_seconds
+    )
+    if action is SchedulerAction.ADD:
         await scheduler.add_job(monitor)
+    elif action is SchedulerAction.REMOVE:
+        await scheduler.remove_job(monitor_id)
+    elif action is SchedulerAction.RESCHEDULE:
+        await scheduler.add_job(monitor, run_immediately=False)
 
     return monitor
 
