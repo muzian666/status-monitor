@@ -15,6 +15,11 @@ from app.schemas.traceroute import (
 router = APIRouter(prefix="/traceroute", tags=["traceroute"])
 
 
+# Keep strong references to in-flight traceroute tasks so they are not
+# garbage-collected mid-run (and so we can see/limit what is running).
+_running_traceroute_tasks: set[asyncio.Task] = set()
+
+
 @router.post("/run", status_code=201)
 async def start_traceroute(
     body: TracerouteRunRequest,
@@ -27,7 +32,9 @@ async def start_traceroute(
 
     from app.checkers.traceroute import run_traceroute
 
-    asyncio.create_task(run_traceroute(run.id, body.target_host))
+    task = asyncio.create_task(run_traceroute(run.id, body.target_host))
+    _running_traceroute_tasks.add(task)
+    task.add_done_callback(_running_traceroute_tasks.discard)
 
     return {"run_id": run.id, "target_host": body.target_host, "status": "running"}
 
