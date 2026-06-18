@@ -45,6 +45,13 @@
     "prev": "Previous",
     "next": "Next"
   },
+  "auth": {
+    "title": "API Key Required",
+    "description": "This Status Monitor requires an API key. Enter the key configured via SM_API_KEY on the server.",
+    "placeholder": "Enter API key",
+    "save": "Unlock",
+    "invalid": "Invalid API key"
+  },
   "header": {
     "backendUrl": "Backend Address",
     "connectionStatus": "WebSocket Status",

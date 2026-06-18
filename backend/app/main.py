@@ -1,4 +1,5 @@
 import logging
+import secrets
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -7,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.api import health, monitors, results, topology, traceroute, websocket
+from app.api import auth, health, monitors, results, topology, traceroute, websocket
 from app.config import parse_cors_origins, settings
 from app.database import migrate_database
 from app.services.monitor_scheduler import scheduler
@@ -16,6 +17,9 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 cors_origins, allow_credentials = parse_cors_origins(settings.cors_origins)
+
+# Paths exempt from API-key auth: health probes and the auth-status probe.
+_PUBLIC_API_PREFIXES = ("/api/v1/health", "/api/v1/auth/status")
 
 
 @asynccontextmanager
@@ -45,10 +49,32 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+@app.middleware("http")
+async def enforce_api_key(request: Request, call_next):
+    """When SM_API_KEY is set, require X-API-Key on protected /api/v1 routes.
+
+    Opt-in: with no key configured the API stays open (backwards compatible).
+    """
+    path = request.url.path
+    if (
+        settings.api_key
+        and request.method != "OPTIONS"  # let CORS preflight through
+        and path.startswith("/api/v1/")
+        and not path.startswith(_PUBLIC_API_PREFIXES)
+    ):
+        provided = request.headers.get("X-API-Key", "")
+        if not secrets.compare_digest(provided, settings.api_key):
+            return JSONResponse(
+                {"detail": "Invalid or missing API key"}, status_code=401
+            )
+    return await call_next(request)
+
 # Register WebSocket FIRST so it has priority over catch-all routes
 app.include_router(websocket.router, prefix="/api/v1")
 
 app.include_router(health.router, prefix="/api/v1")
+app.include_router(auth.router, prefix="/api/v1")
 app.include_router(monitors.router, prefix="/api/v1")
 app.include_router(results.router, prefix="/api/v1")
 app.include_router(topology.router, prefix="/api/v1")
