@@ -16,6 +16,7 @@
     "interval_label": "检查间隔（秒）",
     "timeout_label": "超时时间（秒）",
     "expected_status_label": "期望HTTP状态码",
+    "verify_tls_label": "校验 TLS 证书",
     "dns_record_type_label": "DNS记录类型",
     "is_active_label": "启用"
   },

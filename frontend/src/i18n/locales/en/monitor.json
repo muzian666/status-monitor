@@ -16,6 +16,7 @@
     "interval_label": "Check Interval (seconds)",
     "timeout_label": "Timeout (seconds)",
     "expected_status_label": "Expected HTTP Status",
+    "verify_tls_label": "Verify TLS certificate",
     "dns_record_type_label": "DNS Record Type",
     "is_active_label": "Enabled"
   },

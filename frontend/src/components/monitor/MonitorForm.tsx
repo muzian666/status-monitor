@@ -23,6 +23,7 @@ export default function MonitorForm({ monitor, onSave, onClose }: Props) {
     timeout_seconds: monitor?.timeout_seconds || 5.0,
     is_active: monitor?.is_active ?? true,
     expected_status: monitor?.expected_status || null,
+    verify_tls: monitor?.verify_tls ?? true,
     dns_record_type: monitor?.dns_record_type || null,
   });
   const [saving, setSaving] = useState(false);
@@ -44,6 +45,7 @@ export default function MonitorForm({ monitor, onSave, onClose }: Props) {
 
   const showPort = form.protocol === 'tcp';
   const showHttpStatus = form.protocol === 'http' || form.protocol === 'https';
+  const showVerifyTls = form.protocol === 'https';
   const showDnsType = form.protocol === 'dns';
 
   return (
@@ -138,6 +140,18 @@ export default function MonitorForm({ monitor, onSave, onClose }: Props) {
               </div>
             )}
 
+            {showVerifyTls && (
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={form.verify_tls}
+                  onChange={(e) => setForm({ ...form, verify_tls: e.target.checked })}
+                  className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                />
+                <label className="text-sm text-gray-700 dark:text-gray-300">{t('form.verify_tls_label')}</label>
+              </div>
+            )}
+
             {showDnsType && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -148,8 +162,8 @@ export default function MonitorForm({ monitor, onSave, onClose }: Props) {
                   onChange={(e) => setForm({ ...form, dns_record_type: e.target.value })}
                   className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
                 >
-                  {['A', 'AAAA', 'CNAME', 'MX', 'NS', 'TXT'].map((t) => (
-                    <option key={t} value={t}>{t}</option>
+                  {['A', 'AAAA', 'CNAME', 'MX', 'NS', 'TXT'].map((rt) => (
+                    <option key={rt} value={rt}>{rt}</option>
                   ))}
                 </select>
               </div>

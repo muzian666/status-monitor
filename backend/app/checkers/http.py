@@ -8,9 +8,12 @@ from app.checkers.base import BaseChecker, CheckOutput
 class HttpChecker(BaseChecker):
     async def check(self, target: str, timeout: float = 5.0, **kwargs) -> CheckOutput:
         expected_status = kwargs.get("expected_status")
+        # TLS verification is on by default; monitors can opt out for self-signed
+        # internal targets. Previously this was hardcoded to verify=False.
+        verify_tls = kwargs.get("verify_tls", True)
         try:
             async with httpx.AsyncClient(
-                verify=False, timeout=timeout, follow_redirects=True
+                verify=verify_tls, timeout=timeout, follow_redirects=True
             ) as client:
                 start = time.monotonic()
                 resp = await client.get(target)

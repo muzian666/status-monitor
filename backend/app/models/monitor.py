@@ -1,7 +1,7 @@
 import enum
 from datetime import datetime, timezone
 
-from sqlalchemy import Boolean, DateTime, Float, Integer, String, func
+from sqlalchemy import Boolean, DateTime, Float, Integer, String, func, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -27,6 +27,9 @@ class Monitor(Base):
     timeout_seconds: Mapped[float] = mapped_column(Float, default=5.0)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     expected_status: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    verify_tls: Mapped[bool] = mapped_column(
+        Boolean, default=True, server_default=text("true")
+    )
     dns_record_type: Mapped[str | None] = mapped_column(String(10), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now()
