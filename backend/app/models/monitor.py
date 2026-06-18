@@ -1,7 +1,7 @@
 import enum
 from datetime import datetime, timezone
 
-from sqlalchemy import Boolean, DateTime, Float, Integer, String, func, text
+from sqlalchemy import Boolean, DateTime, Float, Integer, String, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -31,9 +31,13 @@ class Monitor(Base):
         Boolean, default=True, server_default=text("true")
     )
     dns_record_type: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    # Python-side UTC defaults (not DB CURRENT_TIMESTAMP) so timestamps are
+    # correct regardless of the host/server timezone. Columns are tz-aware.
     created_at: Mapped[datetime] = mapped_column(
-        DateTime, server_default=func.now()
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime, server_default=func.now(), onupdate=func.now()
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
     )
