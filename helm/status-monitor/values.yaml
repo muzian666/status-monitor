@@ -36,7 +36,11 @@ resources:
 autoscaling:
   enabled: true
   minReplicas: 1
-  maxReplicas: 5
+  # MUST stay 1 while the backing store is SQLite: multiple writers to one .db
+  # file corrupt it, and each replica runs its own scheduler/WebSocket fan-out.
+  # Raise only after migrating to a shared DB (Postgres/MySQL) + leader election.
+  # See issue #1.
+  maxReplicas: 1
   targetCPUUtilizationPercentage: 70
   targetMemoryUtilizationPercentage: 80
 
