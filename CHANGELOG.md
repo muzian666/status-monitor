@@ -16,6 +16,7 @@ Baseline before this entry: the initial release (commits up to `ff78dbf`), adver
 
 ### Added
 
+- **Runtime Settings page** (#31, PR #39): tune `retention_days`, `traceroute_timeout`, and `traceroute_max_concurrency` from the UI (sidebar → Settings). Values persist in an `app_settings` table and override the env defaults; changes apply immediately — the retention purge job is re-scheduled and the traceroute concurrency semaphore is reset. New migration `0004`.
 - **Alembic migrations, auto-applied on startup** (PR #34): replaces `create_all`, so schema changes are safe for existing databases. Legacy pre-Alembic databases are stamped at the baseline revision (data preserved); fresh databases are created at head. Async `env.py` mirrors the runtime driver; `render_as_batch` is on for SQLite column changes.
 - **DB-aware readiness probe** (#16, PR #26): `/api/v1/health/live` (liveness, no DB) and `/api/v1/health/ready` (readiness, runs `SELECT 1`); `/health` kept as an alias. k8s and Helm probes updated.
 - **Result retention** (#6, PR #29): `SM_RETENTION_DAYS` (default 30, `0` = keep forever) with an hourly purge of old `check_results` and `traceroute_runs` (+ their hops). Added an index on `check_results(monitor_id, checked_at)`.

@@ -69,9 +69,17 @@ class MonitorScheduler:
         logger.info(f"Loaded {len(monitors)} active monitors")
 
     def schedule_retention(self, retention_days: int):
-        """Hourly purge of check results / traceroute runs older than retention_days."""
+        """Hourly purge of check results / traceroute runs older than retention_days.
+
+        Calling this replaces any existing purge job, so it is also the way to
+        reconfigure or disable (retention_days <= 0 removes the job) at runtime.
+        """
         if retention_days <= 0:
-            logger.info("Result retention purge disabled (retention_days <= 0)")
+            try:
+                self._scheduler.remove_job("retention_purge")
+                logger.info("Result retention purge disabled (removed job)")
+            except Exception:
+                pass
             return
         from app.services.retention import run_retention_purge
 

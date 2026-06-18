@@ -1,0 +1,29 @@
+{
+  "title": "Settings",
+  "subtitle": "Runtime configuration. Changes apply immediately (retention is re-scheduled; the traceroute concurrency limit is reset).",
+  "fields": {
+    "retention_days": {
+      "label": "Result retention",
+      "desc": "Days to keep check results and traceroute runs. 0 = keep forever."
+    },
+    "traceroute_timeout": {
+      "label": "Traceroute timeout",
+      "desc": "Overall timeout for a single traceroute run, in seconds."
+    },
+    "traceroute_max_concurrency": {
+      "label": "Traceroute concurrency",
+      "desc": "Maximum number of traceroute runs executing at the same time."
+    }
+  },
+  "default": "Default {{value}}",
+  "overridden": "overridden",
+  "unit": {
+    "days": "days",
+    "seconds": "seconds",
+    "runs": "runs"
+  },
+  "save": "Save",
+  "saving": "Saving...",
+  "saved": "Saved",
+  "error": "Failed to save: {{message}}"
+}

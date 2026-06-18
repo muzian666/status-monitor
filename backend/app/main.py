@@ -8,9 +8,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.api import auth, health, monitors, results, topology, traceroute, websocket
+from app.api import auth, health, monitors, results, settings as settings_api, topology, traceroute, websocket
 from app.config import parse_cors_origins, settings
 from app.database import migrate_database
+from app.services import settings_service
 from app.services.monitor_scheduler import scheduler
 
 logging.basicConfig(level=logging.INFO)
@@ -26,6 +27,8 @@ _PUBLIC_API_PREFIXES = ("/api/v1/health", "/api/v1/auth/status")
 async def lifespan(app: FastAPI):
     await migrate_database()
     scheduler.start()
+    # Apply persisted runtime-setting overrides before anything reads them.
+    await settings_service.apply_db_overrides_to_settings()
     await scheduler.load_active_monitors()
     scheduler.schedule_retention(settings.retention_days)
     logger.info("Status Monitor started")
@@ -77,6 +80,7 @@ app.include_router(health.router, prefix="/api/v1")
 app.include_router(auth.router, prefix="/api/v1")
 app.include_router(monitors.router, prefix="/api/v1")
 app.include_router(results.router, prefix="/api/v1")
+app.include_router(settings_api.router, prefix="/api/v1")
 app.include_router(topology.router, prefix="/api/v1")
 app.include_router(traceroute.router, prefix="/api/v1")
 
