@@ -1,0 +1,29 @@
+{
+  "title": "设置",
+  "subtitle": "运行时配置，改动立即生效（保留策略会重新调度；Traceroute 并发上限会重置）。",
+  "fields": {
+    "retention_days": {
+      "label": "结果保留时长",
+      "desc": "保留检测结果与 Traceroute 记录的天数，0 = 永久保留。"
+    },
+    "traceroute_timeout": {
+      "label": "Traceroute 超时",
+      "desc": "单次 Traceroute 运行的总超时（秒）。"
+    },
+    "traceroute_max_concurrency": {
+      "label": "Traceroute 并发数",
+      "desc": "同时执行的最大 Traceroute 运行数量。"
+    }
+  },
+  "default": "默认 {{value}}",
+  "overridden": "已覆盖",
+  "unit": {
+    "days": "天",
+    "seconds": "秒",
+    "runs": "个"
+  },
+  "save": "保存",
+  "saving": "保存中...",
+  "saved": "已保存",
+  "error": "保存失败：{{message}}"
+}

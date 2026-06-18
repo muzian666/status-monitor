@@ -9,6 +9,8 @@ import topology_en from './locales/en/topology.json';
 import topology_zh from './locales/zh/topology.json';
 import dashboard_en from './locales/en/dashboard.json';
 import dashboard_zh from './locales/zh/dashboard.json';
+import settings_en from './locales/en/settings.json';
+import settings_zh from './locales/zh/settings.json';
 
 const savedLang = localStorage.getItem('language') || navigator.language.startsWith('zh') ? 'zh' : 'en';
 
@@ -19,12 +21,14 @@ i18n.use(initReactI18next).init({
       monitor: monitor_en,
       topology: topology_en,
       dashboard: dashboard_en,
+      settings: settings_en,
     },
     zh: {
       common: common_zh,
       monitor: monitor_zh,
       topology: topology_zh,
       dashboard: dashboard_zh,
+      settings: settings_zh,
     },
   },
   defaultNS: 'common',

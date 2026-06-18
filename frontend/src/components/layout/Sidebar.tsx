@@ -5,6 +5,7 @@ const navItems = [
   { path: '/', icon: '📊', key: 'nav.dashboard' },
   { path: '/monitors', icon: '📡', key: 'nav.monitors' },
   { path: '/topology', icon: '🌐', key: 'nav.topology' },
+  { path: '/settings', icon: '⚙️', key: 'nav.settings' },
 ];
 
 export default function Sidebar() {

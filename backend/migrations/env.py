@@ -19,7 +19,7 @@ from app.config import settings
 from app.database import Base, connect_args_for
 
 # Import models so they register on Base.metadata before autogenerate.
-from app.models import check_result, monitor, topology, traceroute  # noqa: F401
+from app.models import app_setting, check_result, monitor, topology, traceroute  # noqa: F401
 
 config = context.config
 config.set_main_option("sqlalchemy.url", settings.get_database_url())
