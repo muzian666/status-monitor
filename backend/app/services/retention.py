@@ -11,14 +11,8 @@ logger = logging.getLogger(__name__)
 
 
 def _retention_cutoff(retention_days: int) -> datetime:
-    """Cutoff timestamp older than which rows should be purged.
-
-    The DateTime columns are naive (see #18), so compare against a naive UTC
-    instant that matches what check_runner writes.
-    """
-    return (datetime.now(timezone.utc) - timedelta(days=retention_days)).replace(
-        tzinfo=None
-    )
+    """Cutoff timestamp older than which rows should be purged (aware UTC)."""
+    return datetime.now(timezone.utc) - timedelta(days=retention_days)
 
 
 async def purge_older_than(db: AsyncSession, cutoff: datetime) -> dict[str, int]:
