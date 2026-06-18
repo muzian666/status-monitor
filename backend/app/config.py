@@ -23,6 +23,8 @@ class Settings(BaseSettings):
     data_dir: str = ""
     cors_origins: str = "*"
     retention_days: int = 30
+    traceroute_timeout: int = 120
+    traceroute_max_concurrency: int = 8
 
     def get_database_url(self) -> str:
         if self.database_url:
