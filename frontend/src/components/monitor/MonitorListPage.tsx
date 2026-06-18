@@ -43,10 +43,9 @@ export default function MonitorListPage() {
 
   useEffect(() => { load(); }, []);
 
-  // Reset page when data changes
+  // Clamp page into valid range (derived; setState during render is avoided).
   const totalPages = Math.max(1, Math.ceil(monitors.length / pageSize));
-  const safePage = Math.min(page, totalPages);
-  if (safePage !== page) setPage(safePage);
+  const safePage = Math.min(Math.max(1, page), totalPages);
 
   const pagedMonitors = useMemo(
     () => monitors.slice((safePage - 1) * pageSize, safePage * pageSize),
@@ -167,7 +166,7 @@ export default function MonitorListPage() {
             </div>
             <div className="flex items-center gap-2">
               <button
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                onClick={() => setPage(Math.max(1, safePage - 1))}
                 disabled={safePage <= 1}
                 className="px-3 py-1.5 rounded text-sm font-medium border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
@@ -177,7 +176,7 @@ export default function MonitorListPage() {
                 {safePage} / {totalPages}
               </span>
               <button
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                onClick={() => setPage(Math.min(totalPages, safePage + 1))}
                 disabled={safePage >= totalPages}
                 className="px-3 py-1.5 rounded text-sm font-medium border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >

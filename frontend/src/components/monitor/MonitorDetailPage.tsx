@@ -69,8 +69,7 @@ export default function MonitorDetailPage() {
 
   // Downtime pagination
   const totalDowntimePages = Math.max(1, Math.ceil(downtimes.length / pageSize));
-  const safePage = Math.min(page, totalDowntimePages);
-  if (safePage !== page) setPage(safePage);
+  const safePage = Math.min(Math.max(1, page), totalDowntimePages);
 
   const pagedDowntimes = useMemo(
     () => downtimes.slice((safePage - 1) * pageSize, safePage * pageSize),
@@ -215,7 +214,7 @@ export default function MonitorDetailPage() {
               </div>
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  onClick={() => setPage(Math.max(1, safePage - 1))}
                   disabled={safePage <= 1}
                   className="px-3 py-1.5 rounded text-sm font-medium border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 >
@@ -225,7 +224,7 @@ export default function MonitorDetailPage() {
                   {safePage} / {totalDowntimePages}
                 </span>
                 <button
-                  onClick={() => setPage((p) => Math.min(totalDowntimePages, p + 1))}
+                  onClick={() => setPage(Math.min(totalDowntimePages, safePage + 1))}
                   disabled={safePage >= totalDowntimePages}
                   className="px-3 py-1.5 rounded text-sm font-medium border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 >
