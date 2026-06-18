@@ -8,11 +8,14 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.api import health, monitors, results, topology, traceroute, websocket
+from app.config import parse_cors_origins, settings
 from app.database import create_tables
 from app.services.monitor_scheduler import scheduler
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+cors_origins, allow_credentials = parse_cors_origins(settings.cors_origins)
 
 
 @asynccontextmanager
@@ -35,8 +38,8 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=cors_origins,
+    allow_credentials=allow_credentials,
     allow_methods=["*"],
     allow_headers=["*"],
 )

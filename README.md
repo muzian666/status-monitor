@@ -172,6 +172,7 @@ Backend (Python + FastAPI)
 | SM_PORT | 8000 | Server port | 服务端口 |
 | SM_DATA_DIR | ./data | SQLite database directory | SQLite 数据库目录 |
 | SM_DATABASE_URL | (auto) | Override database URL | 覆盖数据库连接地址 |
+| SM_CORS_ORIGINS | * | Comma-separated allowed origins (set explicit origins to enable credentials) | 允许的跨域来源，逗号分隔（设为具体来源才会启用 credentials） |
 
 ---
 
