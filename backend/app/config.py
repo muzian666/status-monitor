@@ -2,6 +2,18 @@ from pathlib import Path
 from pydantic_settings import BaseSettings
 
 
+def parse_cors_origins(raw: str) -> tuple[list[str], bool]:
+    """Parse a comma-separated origins string into (origins, allow_credentials).
+
+    Per the CORS spec, browsers reject credentialed responses when the
+    Access-Control-Allow-Origin header is the wildcard "*". So credentials may
+    only be enabled when origins are explicit (no wildcard).
+    """
+    origins = [o.strip() for o in raw.split(",") if o.strip()] or ["*"]
+    allow_credentials = origins != ["*"]
+    return origins, allow_credentials
+
+
 class Settings(BaseSettings):
     app_name: str = "Status Monitor"
     debug: bool = False
@@ -9,6 +21,7 @@ class Settings(BaseSettings):
     port: int = 8000
     database_url: str = ""
     data_dir: str = ""
+    cors_origins: str = "*"
 
     def get_database_url(self) -> str:
         if self.database_url:
